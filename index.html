@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CYBER FOCUS // HUD v3.0</title>
+    <title>CYBER FOCUS // HUD v3.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -18,11 +18,12 @@
                         pink: '#ff0055',
                         green: '#0aff00',
                         amber: '#ffaa00',
+                        dark: '#0a0f14'
                     },
                     fontFamily: {
                         display: ['Orbitron', 'sans-serif'],
                         mono: ['Share Tech Mono', 'monospace'],
-                        sc: ['Noto Sans SC', 'sans-serif'], // 中文字体优化
+                        sc: ['Noto Sans SC', 'sans-serif'],
                     }
                 }
             }
@@ -36,121 +37,114 @@
             --neon-pink: #ff0055;
             --neon-green: #0aff00;
             --neon-amber: #ffaa00;
-            --grid-color: rgba(0, 243, 255, 0.1);
-            --hud-bg: rgba(10, 20, 30, 0.92); /* 稍微加深背景以适应移动端阅读 */
-            --scan-line: rgba(255, 255, 255, 0.02);
+            --hud-bg: rgba(10, 15, 20, 0.95);
         }
 
         body {
             background-color: var(--bg-void);
             background-image: 
-                linear-gradient(var(--grid-color) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-            background-size: 30px 30px;
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
             color: var(--neon-cyan);
             font-family: 'Share Tech Mono', 'Noto Sans SC', monospace;
             min-height: 100vh;
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent; /* 移动端去除点击高亮 */
+            -webkit-tap-highlight-color: transparent;
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         /* 移动端触摸优化 */
         button, input, .chip { touch-action: manipulation; }
 
-        /* CRT Scanline Effect - 减弱移动端强度 */
-        body::after {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: repeating-linear-gradient(0deg, var(--scan-line), var(--scan-line) 1px, transparent 1px, transparent 2px);
-            pointer-events: none;
-            z-index: 9999;
-            opacity: 0.7;
-        }
-
         /* HUD Panels */
         .hud-panel {
             background: var(--hud-bg);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.05);
-            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 243, 255, 0.15);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
             position: relative;
-            clip-path: polygon(0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px));
-            transition: all 0.3s ease;
+            /* Tech Corners */
+            clip-path: polygon(
+                0 0, 
+                100% 0, 
+                100% calc(100% - 15px), 
+                calc(100% - 15px) 100%, 
+                0 100%
+            );
         }
 
-        /* Corner accents optimized */
-        .hud-panel::before {
-            content: ''; position: absolute; inset: 0; pointer-events: none;
-            background: linear-gradient(to right, var(--neon-cyan) 2px, transparent 2px) 0 0, linear-gradient(to bottom, var(--neon-cyan) 2px, transparent 2px) 0 0, linear-gradient(to left, var(--neon-cyan) 2px, transparent 2px) 100% 100%, linear-gradient(to top, var(--neon-cyan) 2px, transparent 2px) 100% 100%;
-            background-repeat: no-repeat; background-size: 8px 8px; opacity: 0.6;
-        }
-
-        /* Typography */
-        h1, h2, h3, .hud-title { font-family: 'Orbitron', 'Noto Sans SC', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; }
+        /* Typography & Effects */
         .glitch-text { text-shadow: 2px 0 rgba(255,0,0,0.5), -2px 0 rgba(0,255,255,0.5); }
-
+        
         /* XP Bar */
         .xp-container { height: 4px; background: #111; border: 1px solid #333; position: relative; overflow: hidden; }
         .xp-fill { height: 100%; background: var(--neon-amber); width: 0%; box-shadow: 0 0 10px var(--neon-amber); transition: width 0.5s ease-out; }
 
-        /* Mobile Inputs */
+        /* Inputs & Buttons */
         .cyber-input {
             background: rgba(0,0,0,0.6); border: 1px solid #333; color: var(--neon-cyan);
             font-family: inherit; transition: 0.3s; border-radius: 0; appearance: none;
         }
-        .cyber-input:focus { outline: none; border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); }
+        .cyber-input:focus { outline: none; border-color: var(--neon-cyan); }
         
-        /* Buttons */
         .btn-cyber {
             background: rgba(0, 243, 255, 0.05); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);
             text-transform: uppercase; font-family: 'Orbitron', sans-serif; transition: all 0.2s;
             position: relative; overflow: hidden; letter-spacing: 1px;
-            /* Mobile touch target size */
-            min-height: 44px; display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: center; justify-content: center;
         }
-        .btn-cyber:active { background: var(--neon-cyan); color: #000; box-shadow: 0 0 20px var(--neon-cyan); }
+        .btn-cyber:active { background: var(--neon-cyan); color: #000; }
+        
+        .btn-green { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10, 255, 0, 0.05); }
+        .btn-green:active { background: var(--neon-green); color: #000; }
+
         .btn-alert { border-color: var(--neon-pink); color: var(--neon-pink); background: rgba(255, 0, 85, 0.05); }
-        .btn-alert:active { background: var(--neon-pink); color: #fff; box-shadow: 0 0 20px var(--neon-pink); }
-        .btn-ghost { border: 1px solid #333; color: #666; }
-        .btn-ghost:active { border-color: #fff; color: #fff; }
+        .btn-alert:active { background: var(--neon-pink); color: #fff; }
 
         /* Timer Ring */
         .ring-bg { stroke: rgba(255,255,255,0.05); }
         .ring-progress { transition: stroke-dashoffset 1s linear, stroke 0.3s; filter: drop-shadow(0 0 4px currentColor); }
 
         /* Modals */
-        .modal-overlay { background: rgba(0,0,0,0.95); backdrop-filter: blur(5px); transition: opacity 0.3s; }
-        
+        .modal-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); transition: opacity 0.2s; }
+        .modal-content { 
+            animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
+        }
+        @keyframes modalIn { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+
         /* Checkboxes */
         .cyber-check {
-            appearance: none; width: 24px; height: 24px; border: 1px solid var(--neon-cyan);
+            appearance: none; width: 20px; height: 20px; border: 1px solid var(--neon-cyan);
             background: transparent; display: grid; place-content: center; margin-right: 10px;
         }
         .cyber-check::before {
-            content: ""; width: 14px; height: 14px; transform: scale(0);
-            background: var(--neon-cyan); transition: 120ms transform ease-in-out;
-            box-shadow: 0 0 10px var(--neon-cyan);
+            content: ""; width: 10px; height: 10px; transform: scale(0);
+            background: var(--neon-cyan); transition: 100ms transform ease-in-out;
         }
         .cyber-check:checked::before { transform: scale(1); }
 
-        /* Floating XP Text */
+        /* Tabs */
+        .tab-btn { opacity: 0.4; border-bottom: 2px solid transparent; transition: all 0.3s; }
+        .tab-btn.active { opacity: 1; border-color: var(--neon-cyan); color: var(--neon-cyan); text-shadow: 0 0 8px rgba(0, 243, 255, 0.5); }
+
+        /* Floating XP */
         @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
-        .xp-float { position: absolute; color: var(--neon-amber); font-weight: bold; pointer-events: none; animation: floatUp 1.5s forwards; z-index: 50; text-shadow: 0 0 5px black; font-size: 1.2rem; }
+        .xp-float { position: absolute; color: var(--neon-amber); font-weight: bold; pointer-events: none; animation: floatUp 1.5s forwards; z-index: 999; text-shadow: 0 0 5px black; font-size: 1.2rem; }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: #333; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
-
-        /* Layout Tweaks */
-        .safe-pb { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+        /* GM Panel */
+        .gm-panel {
+            position: fixed; bottom: 0; right: 0; width: 100%; max-width: 320px;
+            background: #0a0a0a; border-top: 2px solid var(--neon-amber);
+            transform: translateY(110%); transition: transform 0.3s;
+            z-index: 10000; padding: 20px;
+        }
+        .gm-panel.open { transform: translateY(0); }
     </style>
 </head>
-<body class="p-3 md:p-6 max-w-5xl mx-auto flex flex-col gap-4 safe-pb" onclick="initAudioContext()">
+<body class="p-3 md:p-6 max-w-5xl mx-auto flex flex-col gap-4 safe-pb" onclick="AudioSys.safeInit()">
 
-    <!-- Header & Stats -->
+    <!-- Header -->
     <header class="flex flex-col gap-3 border-b border-gray-800 pb-3">
         <div class="flex justify-between items-start">
             <div>
@@ -158,17 +152,15 @@
                     <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                     <span data-i18n="system_online">系统在线</span>
                 </div>
-                <h1 class="text-2xl md:text-4xl font-bold glitch-text flex items-center gap-2">
-                    FOCUS_OS <span class="text-xs align-top opacity-50 bg-cyan-900/30 px-1 rounded">v3.0 MOBILE</span>
-                </h1>
+                <h1 class="text-2xl md:text-3xl font-bold glitch-text">FOCUS_OS <span class="text-xs opacity-50 bg-cyan-900/30 px-1 rounded">v3.2</span></h1>
             </div>
             <div class="flex gap-2">
-                <button onclick="toggleLang()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-cyan hover:text-cyan transition" id="langBtn">EN</button>
+                <button onclick="toggleLang()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-cyan transition" id="langBtn">EN</button>
                 <button onclick="openHistory()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-amber hover:text-amber transition" data-i18n="history_btn">档案</button>
             </div>
         </div>
 
-        <!-- RPG Stats Bar -->
+        <!-- RPG Stats -->
         <div class="flex items-center gap-3 text-xs font-mono">
             <div class="text-amber">LVL <span id="userLevel" class="text-base font-bold">1</span></div>
             <div class="flex-1 flex flex-col gap-1">
@@ -183,14 +175,14 @@
         </div>
     </header>
 
-    <main class="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+    <main class="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         <!-- MODULE: TIMER -->
         <div class="flex flex-col gap-4">
-            <div class="hud-panel p-4 relative overflow-hidden group">
+            <div class="hud-panel p-4 relative overflow-hidden">
                 <div class="absolute top-2 right-2 text-[10px] text-gray-600 border border-gray-800 px-1" data-i18n="module_timer">计时核心</div>
                 
-                <!-- Timer Vis -->
+                <!-- Timer Ring -->
                 <div class="relative w-56 h-56 mx-auto flex items-center justify-center my-4">
                     <svg class="w-full h-full transform -rotate-90">
                         <circle class="ring-bg" cx="112" cy="112" r="100" stroke-width="4" fill="none"></circle>
@@ -202,26 +194,29 @@
                         <div id="timerDisplay" class="text-5xl font-mono font-bold tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">00:00</div>
                         
                         <div class="flex gap-4 mt-4">
-                            <button id="mainActionBtn" onclick="toggleTimer()" class="w-12 h-12 border border-neon-cyan text-neon-cyan active:bg-neon-cyan active:text-black flex items-center justify-center rounded-sm transition shadow-[0_0_15px_rgba(0,243,255,0.2)] text-xl">
+                            <!-- Play/Pause -->
+                            <button id="mainActionBtn" onclick="toggleTimer()" class="w-14 h-14 bg-black border border-neon-cyan text-neon-cyan active:bg-neon-cyan active:text-black flex items-center justify-center transition shadow-[0_0_15px_rgba(0,243,255,0.2)] text-2xl clip-corner">
                                 ▶
                             </button>
-                            <button onclick="resetTimer()" class="w-12 h-12 border border-red-500 text-red-500 active:bg-red-500 active:text-black flex items-center justify-center rounded-sm transition text-xl">
+                            <!-- Stop / Early Finish -->
+                            <button onclick="triggerStop()" class="w-14 h-14 bg-black border border-neon-pink text-neon-pink active:bg-neon-pink active:text-black flex items-center justify-center transition text-xl clip-corner">
                                 ■
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Timer Controls -->
+                <!-- Controls -->
                 <div class="grid grid-cols-4 gap-2">
-                    <button onclick="preFlightCheck(90, 'sprint')" class="timer-preset btn-cyber py-1 text-xs font-bold leading-tight" data-mode="sprint">90m<br><span class="text-[8px] opacity-70" data-i18n="mode_deep">深潜</span></button>
-                    <button onclick="setTimerDirect(25, 'pomodoro')" class="timer-preset btn-cyber py-1 text-xs font-bold leading-tight" data-mode="pomodoro">25m<br><span class="text-[8px] opacity-70" data-i18n="mode_skirmish">突袭</span></button>
-                    <button onclick="setTimerDirect(15, 'break')" class="timer-preset btn-alert py-1 text-xs font-bold leading-tight" data-mode="break">15m<br><span class="text-[8px] opacity-70" data-i18n="mode_reboot">重启</span></button>
-                    <button onclick="setTimerDirect(5, 'short')" class="timer-preset btn-alert py-1 text-xs font-bold leading-tight" data-mode="short">05m<br><span class="text-[8px] opacity-70" data-i18n="mode_cool">冷却</span></button>
+                    <button onclick="checkTimerSafety(90, 'sprint')" class="timer-preset btn-cyber py-2 text-xs font-bold leading-tight" data-mode="sprint">90m<br><span class="text-[8px] opacity-70" data-i18n="mode_deep">深潜</span></button>
+                    <button onclick="checkTimerSafety(25, 'pomodoro')" class="timer-preset btn-cyber py-2 text-xs font-bold leading-tight" data-mode="pomodoro">25m<br><span class="text-[8px] opacity-70" data-i18n="mode_skirmish">突袭</span></button>
+                    <!-- Green/Amber for breaks, not red -->
+                    <button onclick="checkTimerSafety(15, 'break')" class="timer-preset btn-green py-2 text-xs font-bold leading-tight" data-mode="break">15m<br><span class="text-[8px] opacity-70" data-i18n="mode_reboot">重启</span></button>
+                    <button onclick="checkTimerSafety(5, 'short')" class="timer-preset btn-green py-2 text-xs font-bold leading-tight" data-mode="short">05m<br><span class="text-[8px] opacity-70" data-i18n="mode_cool">冷却</span></button>
                 </div>
             </div>
 
-            <!-- Chips / Manual Overrides -->
+            <!-- Chips -->
             <div class="hud-panel p-3 flex justify-between items-center">
                 <span class="text-[10px] text-amber tracking-widest" data-i18n="chips_label">神经芯片</span>
                 <div class="flex gap-3">
@@ -234,18 +229,19 @@
 
         <!-- MODULE: TASKS -->
         <div class="flex flex-col gap-4 h-full">
-            <div class="hud-panel p-4 flex-1 flex flex-col">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 class="text-xl text-white" data-i18n="objectives_title">主要目标</h2>
-                        <p class="text-[10px] text-gray-500 font-mono mt-1" data-i18n="objectives_subtitle">协议: 单日上限 3 项任务</p>
-                    </div>
-                    <div class="text-right">
-                        <div id="taskProgress" class="text-3xl font-display text-gray-700">0/3</div>
-                    </div>
+            <div class="hud-panel p-4 flex-1 flex flex-col min-h-[400px]">
+                
+                <!-- Tab Switcher -->
+                <div class="flex items-center gap-6 mb-4 border-b border-gray-800 pb-1">
+                    <button onclick="switchTab('primary')" class="tab-btn text-sm font-bold uppercase tracking-widest active" id="tab-primary" data-i18n="tab_main">主线任务</button>
+                    <button onclick="switchTab('side')" class="tab-btn text-sm font-bold uppercase tracking-widest" id="tab-side" data-i18n="tab_side">突发行动</button>
+                    <div class="flex-1 text-right text-3xl font-display text-gray-700" id="taskProgress">0/3</div>
                 </div>
 
-                <div id="taskList" class="flex-1 flex flex-col gap-3">
+                <!-- Task Description -->
+                <p id="taskDesc" class="text-[10px] text-gray-500 font-mono mb-2" data-i18n="objectives_subtitle">协议: 单日上限 3 项任务</p>
+
+                <div id="taskList" class="flex-1 flex flex-col gap-3 overflow-y-auto">
                     <!-- Tasks injected via JS -->
                 </div>
 
@@ -258,9 +254,41 @@
 
     </main>
 
-    <!-- MODAL: FLOW CHECK -->
+    <!-- UNIFIED DIALOG MODAL (Replaces Alert/Confirm) -->
+    <div id="dialogModal" class="fixed inset-0 modal-overlay z-[100] hidden flex items-center justify-center p-6">
+        <div class="hud-panel w-full max-w-sm p-0 bg-dark modal-content border-l-4 border-l-cyan">
+            <div class="p-4 border-b border-gray-800">
+                <h3 id="dialogTitle" class="text-lg font-bold text-white uppercase tracking-wider">SYSTEM ALERT</h3>
+            </div>
+            <div class="p-5">
+                <div id="dialogBody" class="text-sm text-gray-300 font-mono mb-6 leading-relaxed">
+                    Message goes here...
+                </div>
+                <!-- Dynamic Content for Debrief -->
+                <div id="dialogExtra" class="mb-4 hidden"></div>
+
+                <div class="flex gap-3 justify-end">
+                    <button id="dialogCancel" class="px-4 py-2 border border-gray-700 text-gray-500 text-xs hover:text-white uppercase" onclick="closeDialog()">Cancel</button>
+                    <button id="dialogConfirm" class="px-4 py-2 bg-cyan/10 border border-cyan text-cyan text-xs font-bold uppercase hover:bg-cyan hover:text-black transition">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEVEL UP MODAL -->
+    <div id="levelUpModal" class="fixed inset-0 modal-overlay z-[200] hidden flex items-center justify-center p-6">
+        <div class="hud-panel w-full max-w-sm p-8 bg-black border-2 border-amber text-center modal-content shadow-[0_0_50px_rgba(255,170,0,0.2)]">
+            <div class="text-amber text-xs tracking-[0.5em] mb-2">SYSTEM UPGRADE</div>
+            <h2 class="text-4xl font-display text-white mb-4 glitch-text">LEVEL UP</h2>
+            <div class="text-6xl font-bold text-amber mb-4" id="lvlUpNum">2</div>
+            <div class="text-sm text-gray-400 font-mono mb-6">权限提升 // 算力增强</div>
+            <button onclick="closeModal('levelUpModal')" class="w-full py-3 bg-amber text-black font-bold uppercase tracking-widest hover:bg-white transition">ACKNOWLEDGE</button>
+        </div>
+    </div>
+
+    <!-- PRE-FLIGHT CHECK MODAL -->
     <div id="flowCheckModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
-        <div class="hud-panel w-full max-w-md p-6 border-cyan transform transition-all scale-100 bg-black">
+        <div class="hud-panel w-full max-w-md p-6 border-cyan transform transition-all bg-dark modal-content">
             <h2 class="text-xl text-cyan mb-2 text-center" data-i18n="modal_dive_title">启动深潜模式</h2>
             <p class="text-center text-gray-400 text-[10px] font-mono mb-6" data-i18n="modal_dive_subtitle">引擎启动前检查清单</p>
             
@@ -289,175 +317,139 @@
             </div>
 
             <div class="flex gap-3">
-                <button onclick="closeModal('flowCheckModal')" class="flex-1 py-3 border border-gray-700 text-gray-500 text-xs font-mono uppercase" data-i18n="btn_abort">放弃</button>
+                <button onclick="closeModal('flowCheckModal')" class="flex-1 py-3 border border-gray-700 text-gray-500 text-xs font-mono uppercase hover:text-white" data-i18n="btn_abort">放弃</button>
                 <button id="engageBtn" onclick="confirmStart()" class="flex-1 py-3 bg-cyan/10 border border-cyan text-cyan font-bold font-display uppercase tracking-widest opacity-50 cursor-not-allowed" disabled data-i18n="btn_engage">接入系统</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: HISTORY -->
+    <!-- HISTORY MODAL -->
     <div id="historyModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
-        <div class="hud-panel w-full max-w-lg h-[80vh] flex flex-col p-0 bg-black">
+        <div class="hud-panel w-full max-w-lg h-[80vh] flex flex-col p-0 bg-dark modal-content">
             <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
                 <h2 class="text-lg text-amber" data-i18n="history_title">数据档案馆</h2>
                 <button onclick="closeModal('historyModal')" class="text-gray-500 hover:text-white text-xl">×</button>
             </div>
-            <div id="historyList" class="flex-1 overflow-y-auto p-4 space-y-4 text-sm font-mono">
-                <!-- History Items -->
-            </div>
-            <div class="p-3 border-t border-gray-800 text-center text-[10px] text-gray-600">
-                CYBER_FOCUS // MEMORY_BANK
-            </div>
+            <div id="historyList" class="flex-1 overflow-y-auto p-4 space-y-4 text-sm font-mono"></div>
         </div>
     </div>
 
-    <!-- AUDIO SYSTEM (Hidden) -->
-    <!-- Using Web Audio API script below -->
+    <!-- GM TOOLS -->
+    <div class="fixed bottom-4 right-4 text-[10px] text-gray-800 cursor-pointer z-[50]" onclick="toggleGM()">GM</div>
+    <div class="gm-panel" id="gmPanel">
+        <div class="flex justify-between items-center text-amber mb-3 border-b border-gray-700 pb-2">
+            <span class="font-bold">DEBUG_MODE</span>
+            <button onclick="toggleGM()" class="text-gray-500">×</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 font-mono text-xs">
+            <button onclick="gmResetTasks()" class="border border-gray-600 p-2 text-gray-300">重置任务</button>
+            <button onclick="gmFastForward()" class="border border-gray-600 p-2 text-gray-300">快进时间</button>
+            <button onclick="gmAddXp()" class="border border-gray-600 p-2 text-gray-300">加 XP</button>
+            <button onclick="gmClearStorage()" class="border border-red-900 text-red-500 p-2">清空缓存</button>
+        </div>
+    </div>
 
     <script>
-        // --- LOCALIZATION SYSTEM ---
+        // --- LOCALIZATION ---
         const DICTIONARY = {
             zh: {
-                system_online: "系统在线",
-                history_btn: "档案馆",
-                module_timer: "计时核心",
-                status_idle: "待机中",
-                status_focus: "专注链接",
-                status_break: "系统冷却",
-                mode_deep: "深潜",
-                mode_skirmish: "突袭",
-                mode_reboot: "重启",
-                mode_cool: "冷却",
-                chips_label: "神经芯片",
-                objectives_title: "主要目标",
-                objectives_subtitle: "协议: 单日上限 3 项任务",
+                system_online: "系统在线", history_btn: "档案馆", module_timer: "计时核心",
+                status_idle: "待机中", status_focus: "专注链接", status_break: "系统冷却",
+                mode_deep: "深潜", mode_skirmish: "突袭", mode_reboot: "重启", mode_cool: "冷却",
+                chips_label: "神经芯片", objectives_subtitle: "协议: 单日上限 3 项任务",
+                quick_ops_subtitle: "协议: < 2分钟的任务，立刻执行。",
                 archive_day_btn: ">> 归档今日数据 <<",
-                modal_dive_title: "启动深潜模式",
-                modal_dive_subtitle: "引擎启动前检查清单",
-                check_target: "目标锁定",
-                check_target_desc: "单一明确的目标。",
-                check_silence: "通讯静默",
-                check_silence_desc: "手机勿扰，关闭通知。",
-                check_bio: "生理机能",
-                check_bio_desc: "水，咖啡，洗手间。",
-                btn_abort: "放弃",
-                btn_engage: "接入系统",
-                history_title: "数据档案馆",
-                archive_confirm: "今日任务将归档并重置，确认执行？",
-                archive_empty: "无数据可归档",
-                task_ph: "> 输入任务指令...",
+                modal_dive_title: "启动深潜模式", modal_dive_subtitle: "引擎启动前检查清单",
+                check_target: "目标锁定", check_target_desc: "单一明确的目标。",
+                check_silence: "通讯静默", check_silence_desc: "手机勿扰，关闭通知。",
+                check_bio: "生理机能", check_bio_desc: "水，咖啡，洗手间。",
+                btn_abort: "放弃", btn_engage: "接入系统", history_title: "数据档案馆",
+                tab_main: "主线任务", tab_side: "突发行动",
+                task_ph: "> 输入任务指令...", side_ph: "> 2分钟内能搞定的事...",
+                dialog_reset_title: "中断警告", dialog_reset_msg: "计时器正在运行。切换模式或重置将丢失当前进度。确认执行？",
+                dialog_archive_title: "归档确认", dialog_archive_msg: "确认归档今日所有任务数据并重置列表？",
+                dialog_debrief_title: "任务简报", dialog_debrief_msg: "检测到提前终止。确认已完成的任务以获取部分经验值：",
                 rank_1: "义体乞丐", rank_2: "街头混混", rank_3: "赛博浪人", rank_4: "网络行者", rank_5: "传奇佣兵", rank_6: "荒坂塔顶"
             },
             en: {
-                system_online: "SYSTEM ONLINE",
-                history_btn: "ARCHIVES",
-                module_timer: "TIMER CORE",
-                status_idle: "IDLE",
-                status_focus: "LINKED",
-                status_break: "COOLDOWN",
-                mode_deep: "DEEP",
-                mode_skirmish: "SKIRMISH",
-                mode_reboot: "REBOOT",
-                mode_cool: "COOL",
-                chips_label: "NEURAL CHIPS",
-                objectives_title: "PRIMARY OBJECTIVES",
-                objectives_subtitle: "PROTOCOL: 3 TASKS MAX / DAY",
+                system_online: "SYSTEM ONLINE", history_btn: "ARCHIVES", module_timer: "TIMER CORE",
+                status_idle: "IDLE", status_focus: "LINKED", status_break: "COOLDOWN",
+                mode_deep: "DEEP", mode_skirmish: "SKIRMISH", mode_reboot: "REBOOT", mode_cool: "COOL",
+                chips_label: "NEURAL CHIPS", objectives_subtitle: "PROTOCOL: 3 TASKS MAX / DAY",
+                quick_ops_subtitle: "PROTOCOL: DO IT IF < 2 MINS.",
                 archive_day_btn: ">> ARCHIVE DAY LOG <<",
-                modal_dive_title: "INITIATE DIVE",
-                modal_dive_subtitle: "PRE-FLIGHT CHECKLIST",
-                check_target: "TARGET LOCKED",
-                check_target_desc: "One clear goal defined.",
-                check_silence: "COMMS SILENCED",
-                check_silence_desc: "DND active, notifications off.",
-                check_bio: "BIO-METRICS",
-                check_bio_desc: "Hydrated, caffeinated.",
-                btn_abort: "ABORT",
-                btn_engage: "ENGAGE",
-                history_title: "DATA ARCHIVES",
-                archive_confirm: "Archive and reset today's tasks?",
-                archive_empty: "NO DATA TO ARCHIVE",
-                task_ph: "> INPUT DIRECTIVE...",
+                modal_dive_title: "INITIATE DIVE", modal_dive_subtitle: "PRE-FLIGHT CHECKLIST",
+                check_target: "TARGET LOCKED", check_target_desc: "One clear goal defined.",
+                check_silence: "COMMS SILENCED", check_silence_desc: "DND active, notifications off.",
+                check_bio: "BIO-METRICS", check_bio_desc: "Hydrated, caffeinated.",
+                btn_abort: "ABORT", btn_engage: "ENGAGE", history_title: "DATA ARCHIVES",
+                tab_main: "PRIMARY", tab_side: "QUICK OPS",
+                task_ph: "> INPUT DIRECTIVE...", side_ph: "> QUICK TASK (< 2m)...",
+                dialog_reset_title: "INTERRUPT ALERT", dialog_reset_msg: "Timer is running. Switching/Resetting will lose progress. Confirm?",
+                dialog_archive_title: "ARCHIVE CONFIRM", dialog_archive_msg: "Archive today's log and reset tasks?",
+                dialog_debrief_title: "MISSION DEBRIEF", dialog_debrief_msg: "Early termination detected. Verify completed objectives for partial XP:",
                 rank_1: "STREET RAT", rank_2: "GUTTER PUNK", rank_3: "EDGE RUNNER", rank_4: "NET RUNNER", rank_5: "LEGEND", rank_6: "ARASAKA TOP"
             }
         };
 
-        // --- AUDIO SYSTEM (Web Audio API - Retro Synth) ---
+        // --- AUDIO SYSTEM (ROBUST FIX) ---
         const AudioSys = {
             ctx: null,
             init: function() {
                 if (!this.ctx) {
                     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                } else if (this.ctx.state === 'suspended') {
+                }
+            },
+            safeInit: function() {
+                // Call this on ANY user interaction
+                if (!this.ctx) this.init();
+                if (this.ctx && this.ctx.state === 'suspended') {
                     this.ctx.resume();
                 }
             },
-            playTone: function(freq, type, duration, vol = 0.1) {
+            playTone: function(freq, type, duration, vol = 0.1, startTime = 0) {
                 if (!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                osc.type = type; // sine, square, sawtooth, triangle
-                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.type = type; 
+                const t = startTime || this.ctx.currentTime;
+                osc.frequency.setValueAtTime(freq, t);
+                gain.gain.setValueAtTime(vol, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + duration);
+                osc.start(t);
+                osc.stop(t + duration);
             },
             sfx: {
-                click: () => AudioSys.playTone(800, 'square', 0.1, 0.05),
-                hover: () => AudioSys.playTone(200, 'sine', 0.05, 0.02), // Very subtle
+                click: () => { AudioSys.safeInit(); AudioSys.playTone(800, 'square', 0.1, 0.05); },
+                quick: () => { AudioSys.safeInit(); AudioSys.playTone(1500, 'sine', 0.1, 0.05); },
                 start: () => {
-                    AudioSys.playTone(200, 'sawtooth', 0.5, 0.1);
-                    setTimeout(() => AudioSys.playTone(400, 'sawtooth', 0.5, 0.1), 100);
-                    setTimeout(() => AudioSys.playTone(800, 'sawtooth', 0.8, 0.1), 200);
+                    AudioSys.safeInit();
+                    const t = AudioSys.ctx.currentTime;
+                    AudioSys.playTone(200, 'sawtooth', 0.5, 0.1, t);
+                    AudioSys.playTone(400, 'sawtooth', 0.5, 0.1, t+0.1);
+                    AudioSys.playTone(800, 'sawtooth', 0.8, 0.1, t+0.2);
                 },
-                complete: () => {
-                    [440, 554, 659, 880].forEach((f, i) => setTimeout(() => AudioSys.playTone(f, 'square', 0.3, 0.1), i*100));
+                alarm: () => {
+                    AudioSys.safeInit();
+                    const now = AudioSys.ctx.currentTime;
+                    AudioSys.playTone(880, 'square', 0.1, 0.2, now);
+                    AudioSys.playTone(880, 'square', 0.1, 0.2, now + 0.15);
+                    AudioSys.playTone(880, 'square', 0.4, 0.2, now + 0.3);
+                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
                 },
                 xp: () => {
+                    AudioSys.safeInit();
                     AudioSys.playTone(1200, 'sine', 0.1, 0.05);
                     setTimeout(() => AudioSys.playTone(1800, 'sine', 0.2, 0.05), 50);
                 },
                 levelUp: () => {
-                     // Power up sound
-                     const osc = AudioSys.ctx.createOscillator();
-                     const gain = AudioSys.ctx.createGain();
-                     osc.frequency.setValueAtTime(100, AudioSys.ctx.currentTime);
-                     osc.frequency.linearRampToValueAtTime(1000, AudioSys.ctx.currentTime + 1);
-                     gain.gain.setValueAtTime(0.2, AudioSys.ctx.currentTime);
-                     gain.gain.linearRampToValueAtTime(0, AudioSys.ctx.currentTime + 1);
-                     osc.connect(gain); gain.connect(AudioSys.ctx.destination);
-                     osc.start(); osc.stop(AudioSys.ctx.currentTime + 1);
+                    AudioSys.safeInit();
+                    const now = AudioSys.ctx.currentTime;
+                    AudioSys.playTone(100, 'square', 1.5, 0.2, now);
+                    AudioSys.playTone(200, 'square', 1.5, 0.1, now);
                 }
-            }
-        };
-
-        function initAudioContext() { AudioSys.init(); }
-
-        // --- GAME SYSTEM (RPG) ---
-        const GAME = {
-            titles: ['rank_1', 'rank_2', 'rank_3', 'rank_4', 'rank_5', 'rank_6'],
-            calculateLevel: (xp) => Math.floor(Math.sqrt(xp / 100)) + 1,
-            nextLevelXp: (lvl) => 100 * Math.pow(lvl, 2),
-            addXp: (amount, eventType) => {
-                STATE.user.xp += amount;
-                const newLevel = GAME.calculateLevel(STATE.user.xp);
-                
-                // Show floating text
-                showFloatingText(`+${amount} XP`, eventType);
-                AudioSys.sfx.xp();
-
-                if(newLevel > STATE.user.level) {
-                    STATE.user.level = newLevel;
-                    // Level Up Effect
-                    setTimeout(() => {
-                        AudioSys.sfx.levelUp();
-                        alert(`>>> SYSTEM UPGRADE <<<\nLEVEL ${newLevel} REACHED`);
-                    }, 500);
-                }
-                saveSystem();
-                updateUserStats();
             }
         };
 
@@ -469,13 +461,16 @@
             tasks: JSON.parse(localStorage.getItem('cyber_tasks')) || [
                 { id: 1, text: '', done: false }, { id: 2, text: '', done: false }, { id: 3, text: '', done: false }
             ],
+            sideTasks: JSON.parse(localStorage.getItem('cyber_side_tasks')) || [], // New
+            activeTab: 'primary',
             history: JSON.parse(localStorage.getItem('cyber_history')) || [],
             timer: {
                 totalSeconds: 5400,
                 remaining: 5400,
                 active: false,
                 mode: 'sprint',
-                interval: null
+                interval: null,
+                startTime: 0 // Track when started for partial credit
             }
         };
 
@@ -495,90 +490,57 @@
             short: { time: 5 * 60, color: '#0aff00', labelKey: 'mode_cool' }
         };
 
-        // --- FUNCTIONS ---
-
+        // --- COMMON FUNCTIONS ---
         function t(key) { return DICTIONARY[currentLang][key] || key; }
-
-        function renderText() {
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                el.innerText = t(el.dataset.i18n);
-            });
-            document.querySelectorAll('input[placeholder]').forEach(el => {
-               if(el.id.includes('taskInput')) el.placeholder = t('task_ph');
-            });
-            document.getElementById('langBtn').innerText = currentLang === 'zh' ? 'EN' : '中';
-            updateUserStats(); // Update titles based on lang
-            updateTimerLabel();
-        }
-
-        function toggleLang() {
-            currentLang = currentLang === 'zh' ? 'en' : 'zh';
-            localStorage.setItem('cyber_lang', currentLang);
-            AudioSys.sfx.click();
-            renderText();
-        }
-
-        function init() {
-            renderTasks();
-            updateTimerDisplay();
-            updateUserStats();
-            renderText();
-            
-            // Checklist Logic
-            document.querySelectorAll('.checklist-item').forEach(cb => {
-                cb.addEventListener('change', () => {
-                    AudioSys.sfx.click();
-                    checkGatekeeper();
-                });
-            });
-        }
 
         function saveSystem() {
             localStorage.setItem('cyber_tasks', JSON.stringify(STATE.tasks));
+            localStorage.setItem('cyber_side_tasks', JSON.stringify(STATE.sideTasks));
             localStorage.setItem('cyber_user', JSON.stringify(STATE.user));
             localStorage.setItem('cyber_history', JSON.stringify(STATE.history));
+            localStorage.setItem('cyber_lang', currentLang);
         }
 
-        // --- RPG UI ---
-        function updateUserStats() {
-            const lvl = GAME.calculateLevel(STATE.user.xp);
-            const nextXp = GAME.nextLevelXp(lvl);
-            const prevXp = GAME.nextLevelXp(lvl - 1); // Approx start of current level
+        // --- UNIFIED MODAL SYSTEM ---
+        function showDialog(title, body, onConfirm, showCancel = true, extraContent = null) {
+            AudioSys.sfx.click();
+            document.getElementById('dialogTitle').innerText = title;
+            document.getElementById('dialogBody').innerText = body;
             
-            // Progress within level
-            const levelRange = nextXp - prevXp;
-            const currentProgress = STATE.user.xp - prevXp;
-            const percent = Math.min(100, Math.max(0, (currentProgress / levelRange) * 100));
+            const confirmBtn = document.getElementById('dialogConfirm');
+            const cancelBtn = document.getElementById('dialogCancel');
+            const extraDiv = document.getElementById('dialogExtra');
 
-            document.getElementById('userLevel').innerText = lvl;
-            document.getElementById('currentXp').innerText = STATE.user.xp;
-            document.getElementById('nextLevelXp').innerText = nextXp;
-            document.getElementById('xpBar').style.width = `${percent}%`;
+            cancelBtn.style.display = showCancel ? 'block' : 'none';
             
-            // Title
-            const titleIndex = Math.min(lvl - 1, GAME.titles.length - 1);
-            document.getElementById('userTitle').innerText = t(GAME.titles[titleIndex]);
-        }
+            // Clone button to remove old listeners
+            const newConfirm = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
+            
+            newConfirm.onclick = () => {
+                closeDialog();
+                if(onConfirm) onConfirm();
+            };
 
-        function showFloatingText(text, sourceElement) {
-            const float = document.createElement('div');
-            float.className = 'xp-float';
-            float.innerText = text;
-            
-            let x, y;
-            if(sourceElement) {
-                const rect = sourceElement.getBoundingClientRect();
-                x = rect.left + rect.width / 2;
-                y = rect.top;
+            // Inject extra content (checkboxes etc)
+            if(extraContent) {
+                extraDiv.innerHTML = '';
+                extraDiv.appendChild(extraContent);
+                extraDiv.classList.remove('hidden');
             } else {
-                x = window.innerWidth / 2;
-                y = window.innerHeight / 2;
+                extraDiv.classList.add('hidden');
             }
-            
-            float.style.left = `${x}px`;
-            float.style.top = `${y}px`;
-            document.body.appendChild(float);
-            setTimeout(() => float.remove(), 1500);
+
+            document.getElementById('dialogModal').classList.remove('hidden');
+        }
+
+        function closeDialog() {
+            document.getElementById('dialogModal').classList.add('hidden');
+        }
+
+        function closeModal(id) {
+            AudioSys.sfx.click();
+            document.getElementById(id).classList.add('hidden');
         }
 
         // --- TIMER ENGINE ---
@@ -602,14 +564,19 @@
         }
 
         function toggleTimer() {
+            AudioSys.safeInit();
             AudioSys.sfx.click();
+            
             if (STATE.timer.active) {
+                // Pause logic
                 clearInterval(STATE.timer.interval);
                 STATE.timer.active = false;
                 document.getElementById('mainActionBtn').innerHTML = '▶';
                 updateTimerLabel();
             } else {
+                // Start logic
                 if (STATE.timer.remaining <= 0) return;
+                STATE.timer.startTime = Date.now(); // Log start time
                 startTicker();
             }
         }
@@ -630,34 +597,36 @@
             }, 1000);
         }
 
-        function completeTimer() {
-            clearInterval(STATE.timer.interval);
-            STATE.timer.active = false;
-            document.getElementById('mainActionBtn').innerHTML = '▶';
-            AudioSys.sfx.complete();
-            
-            // Give XP based on duration (1 min = 2 XP)
-            const minutes = STATE.timer.totalSeconds / 60;
-            const xpEarned = Math.floor(minutes * 2);
-            GAME.addXp(xpEarned, UI.timerDisplay);
-
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00f3ff', '#ff0055'] });
-            
-            updateTimerLabel();
+        function checkTimerSafety(min, mode) {
+            AudioSys.safeInit();
+            // If timer is running, warn user
+            if(STATE.timer.active || (STATE.timer.remaining !== STATE.timer.totalSeconds && STATE.timer.remaining !== 0)) {
+                showDialog(t('dialog_reset_title'), t('dialog_reset_msg'), () => {
+                    preFlightOrDirect(min, mode);
+                });
+            } else {
+                preFlightOrDirect(min, mode);
+            }
         }
 
-        function resetTimer() {
-            AudioSys.sfx.click();
-            clearInterval(STATE.timer.interval);
-            STATE.timer.active = false;
-            STATE.timer.remaining = STATE.timer.totalSeconds;
-            document.getElementById('mainActionBtn').innerHTML = '▶';
-            updateTimerDisplay();
-            updateTimerLabel();
+        function preFlightOrDirect(min, mode) {
+            // If it's a "Focus" mode (Deep/Skirmish), show checklist
+            if(mode === 'sprint' || mode === 'pomodoro') {
+                preFlightCheck(min, mode);
+            } else {
+                setTimerDirect(min, mode);
+            }
+        }
+
+        function preFlightCheck(min, mode) {
+            UI.modal.classList.remove('hidden');
+            UI.modal.dataset.targetMin = min;
+            UI.modal.dataset.targetMode = mode;
+            document.querySelectorAll('.checklist-item').forEach(cb => cb.checked = false);
+            checkGatekeeper();
         }
 
         function setTimerDirect(min, mode) {
-            AudioSys.sfx.click();
             clearInterval(STATE.timer.interval);
             STATE.timer.active = false;
             STATE.timer.mode = mode;
@@ -668,32 +637,6 @@
             updateTimerLabel();
         }
 
-        function preFlightCheck(min, mode) {
-            AudioSys.sfx.click();
-            UI.modal.classList.remove('hidden');
-            UI.modal.dataset.targetMin = min;
-            UI.modal.dataset.targetMode = mode;
-            document.querySelectorAll('.checklist-item').forEach(cb => cb.checked = false);
-            checkGatekeeper();
-        }
-
-        function closeModal(id) {
-            AudioSys.sfx.click();
-            document.getElementById(id).classList.add('hidden');
-        }
-
-        function checkGatekeeper() {
-            const allChecked = Array.from(document.querySelectorAll('.checklist-item')).every(cb => cb.checked);
-            if (allChecked) {
-                UI.engageBtn.disabled = false;
-                UI.engageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                UI.engageBtn.classList.add('active:bg-cyan', 'active:text-black');
-            } else {
-                UI.engageBtn.disabled = true;
-                UI.engageBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-        }
-
         function confirmStart() {
             const min = UI.modal.dataset.targetMin;
             const mode = UI.modal.dataset.targetMode;
@@ -702,9 +645,107 @@
             startTicker();
         }
 
+        function checkGatekeeper() {
+            const allChecked = Array.from(document.querySelectorAll('.checklist-item')).every(cb => cb.checked);
+            const btn = UI.engageBtn;
+            if (allChecked) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // --- STOP & DEBRIEF (Early Finish) ---
+        function triggerStop() {
+            AudioSys.safeInit();
+            if(!STATE.timer.active && STATE.timer.remaining === STATE.timer.totalSeconds) return;
+
+            // Pause
+            clearInterval(STATE.timer.interval);
+            STATE.timer.active = false;
+            document.getElementById('mainActionBtn').innerHTML = '▶';
+
+            // Calculate Partial XP (1 XP per 2 mins completed)
+            const elapsedSeconds = STATE.timer.totalSeconds - STATE.timer.remaining;
+            const xpEarned = Math.floor((elapsedSeconds / 60) * 0.5); 
+
+            // Create checkbox list for Debrief
+            const listDiv = document.createElement('div');
+            listDiv.className = "flex flex-col gap-2 bg-black/50 p-3 border border-gray-700 max-h-40 overflow-y-auto";
+            
+            STATE.tasks.forEach((t, i) => {
+                if(t.text && !t.done) {
+                    const label = document.createElement('label');
+                    label.className = "flex items-center gap-2 text-xs text-white cursor-pointer hover:text-cyan";
+                    label.innerHTML = `<input type="checkbox" class="cyber-check debrief-check" value="${i}"> ${t.text}`;
+                    listDiv.appendChild(label);
+                }
+            });
+
+            if(listDiv.children.length === 0) listDiv.innerHTML = '<div class="text-gray-500 italic text-xs">No active tasks found.</div>';
+
+            showDialog(t('dialog_debrief_title'), `${t('dialog_debrief_msg')} (+${xpEarned} XP)`, () => {
+                // Apply ticked tasks
+                const checks = document.querySelectorAll('.debrief-check');
+                checks.forEach(cb => {
+                    if(cb.checked) {
+                        STATE.tasks[cb.value].done = true;
+                        GAME.addXp(50); // XP for task
+                    }
+                });
+                GAME.addXp(xpEarned); // XP for time
+                saveSystem();
+                renderTasks();
+                setTimerDirect(CONFIG[STATE.timer.mode].time / 60, STATE.timer.mode); // Reset to full
+            }, true, listDiv);
+        }
+
+        function completeTimer() {
+            clearInterval(STATE.timer.interval);
+            STATE.timer.active = false;
+            document.getElementById('mainActionBtn').innerHTML = '▶';
+            
+            AudioSys.sfx.alarm();
+            
+            const minutes = STATE.timer.totalSeconds / 60;
+            const xpEarned = Math.floor(minutes * 2);
+            GAME.addXp(xpEarned);
+
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00f3ff', '#ff0055'] });
+            
+            // Ask for task checkoff
+            setTimeout(() => triggerStop(), 1000); 
+        }
+
         // --- TASK SYSTEM ---
+        function switchTab(tab) {
+            AudioSys.safeInit();
+            AudioSys.sfx.click();
+            STATE.activeTab = tab;
+            
+            // UI Toggle
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            
+            // Desc Toggle
+            document.getElementById('taskDesc').innerText = tab === 'primary' ? t('objectives_subtitle') : t('quick_ops_subtitle');
+            
+            renderTasks();
+        }
+
         function renderTasks() {
             UI.taskList.innerHTML = '';
+            
+            if (STATE.activeTab === 'primary') {
+                renderPrimaryTasks();
+            } else {
+                renderSideTasks();
+            }
+        }
+
+        function renderPrimaryTasks() {
             let completed = 0;
             
             STATE.tasks.forEach((task, index) => {
@@ -732,78 +773,168 @@
             
             const progressEl = document.getElementById('taskProgress');
             progressEl.textContent = `${completed}/3`;
-            progressEl.className = `text-3xl font-display ${completed === 3 ? 'text-neon-green glitch-text' : 'text-gray-700'}`;
+            progressEl.className = `flex-1 text-right text-3xl font-display ${completed === 3 ? 'text-neon-green glitch-text' : 'text-gray-700'}`;
+        }
+
+        function renderSideTasks() {
+            const progressEl = document.getElementById('taskProgress');
+            progressEl.innerHTML = '<span class="text-xs tracking-widest text-cyan">∞</span>';
+
+            // Add Input for new Side Task
+            const inputDiv = document.createElement('div');
+            inputDiv.className = 'border border-gray-700 p-2 flex gap-2 mb-2 bg-black';
+            inputDiv.innerHTML = `
+                <input type="text" id="newSideTask" class="flex-1 bg-transparent border-none outline-none text-white text-xs font-mono" placeholder="${t('side_ph')}">
+                <button onclick="addSideTask()" class="text-cyan font-bold text-lg px-2">+</button>
+            `;
+            UI.taskList.appendChild(inputDiv);
+
+            // Render List
+            STATE.sideTasks.forEach((txt, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-2 border border-gray-800 bg-void/30';
+                div.innerHTML = `
+                    <span class="text-xs text-gray-300">${txt}</span>
+                    <button onclick="completeSideTask(${idx}, this)" class="text-gray-600 hover:text-cyan text-xs font-bold">[ DONE ]</button>
+                `;
+                UI.taskList.appendChild(div);
+            });
+        }
+
+        function addSideTask() {
+            const input = document.getElementById('newSideTask');
+            const val = input.value.trim();
+            if(val) {
+                STATE.sideTasks.unshift(val); // Add to top
+                saveSystem();
+                renderTasks();
+                AudioSys.sfx.click();
+            }
+        }
+
+        function completeSideTask(idx, btnEl) {
+            AudioSys.sfx.quick();
+            // Animation then remove
+            btnEl.parentElement.style.opacity = '0';
+            btnEl.parentElement.style.transform = 'translateX(20px)';
+            
+            GAME.addXp(15, btnEl); // Small XP reward
+
+            setTimeout(() => {
+                STATE.sideTasks.splice(idx, 1);
+                saveSystem();
+                renderTasks();
+            }, 300);
         }
 
         function updateTaskText(index, val) {
             STATE.tasks[index].text = val;
+            if(!val.trim()) STATE.tasks[index].done = false;
             saveSystem();
+            if(!val.trim()) renderTasks();
         }
 
         function toggleTask(index, btnEl) {
+            AudioSys.safeInit();
             AudioSys.sfx.click();
-            if(!STATE.tasks[index].text.trim()) return; // Don't check empty tasks
+            if(!STATE.tasks[index].done && !STATE.tasks[index].text.trim()) return;
 
             STATE.tasks[index].done = !STATE.tasks[index].done;
-            
             if(STATE.tasks[index].done) {
-                // Task Complete: +50 XP
-                AudioSys.sfx.complete();
+                AudioSys.sfx.xp();
                 GAME.addXp(50, btnEl);
-            } else {
-                // Undo: -50 XP (Optional punishment logic, but lets keep it simple)
-                // STATE.user.xp = Math.max(0, STATE.user.xp - 50); 
             }
-
             saveSystem();
             renderTasks();
             updateUserStats();
         }
 
-        function toggleChip(el) {
-            AudioSys.sfx.click();
-            if(el.style.opacity === '0.3' || el.style.opacity === '') {
-                el.style.opacity = '1';
-                el.style.transform = 'scale(1.1)';
-                el.style.boxShadow = '0 0 10px #ffaa00';
-            } else {
-                el.style.opacity = '0.3';
-                el.style.transform = 'scale(1)';
-                el.style.boxShadow = 'none';
-            }
-        }
-
-        // --- HISTORY ARCHIVE ---
         function archiveDay() {
-            AudioSys.sfx.click();
-            // Check if there's anything to archive
-            const hasContent = STATE.tasks.some(t => t.text.trim().length > 0);
-            if(!hasContent) {
-                alert(t('archive_empty'));
-                return;
-            }
+            AudioSys.safeInit();
+            const hasContent = STATE.tasks.some(t => t.text.trim().length > 0) || STATE.sideTasks.length > 0;
+            if(!hasContent) return;
 
-            if(confirm(t('archive_confirm'))) {
+            showDialog(t('dialog_archive_title'), t('dialog_archive_msg'), () => {
                 const now = new Date();
                 const record = {
                     date: now.toISOString(),
                     tasks: JSON.parse(JSON.stringify(STATE.tasks)),
+                    sideTasks: [...STATE.sideTasks],
                     completedCount: STATE.tasks.filter(t => t.done).length
                 };
 
-                STATE.history.unshift(record); // Add to top
-                
-                // Reset tasks
+                STATE.history.unshift(record);
                 STATE.tasks.forEach(t => { t.text = ''; t.done = false; });
-                
+                STATE.sideTasks = []; // Clear side tasks daily
                 saveSystem();
                 renderTasks();
-                AudioSys.sfx.xp(); // Success sound
-            }
+                AudioSys.sfx.xp();
+            });
         }
 
+        // --- RPG SYSTEM ---
+        const GAME = {
+            titles: ['rank_1', 'rank_2', 'rank_3', 'rank_4', 'rank_5', 'rank_6'],
+            calculateLevel: (xp) => Math.floor(Math.sqrt(xp / 100)) + 1,
+            nextLevelXp: (lvl) => 100 * Math.pow(lvl, 2),
+            addXp: (amount, eventType) => {
+                STATE.user.xp += amount;
+                const newLevel = GAME.calculateLevel(STATE.user.xp);
+                showFloatingText(`+${amount} XP`, eventType);
+                
+                if(newLevel > STATE.user.level) {
+                    STATE.user.level = newLevel;
+                    // Custom Level Up Modal
+                    setTimeout(() => {
+                        AudioSys.sfx.levelUp();
+                        document.getElementById('lvlUpNum').innerText = newLevel;
+                        document.getElementById('levelUpModal').classList.remove('hidden');
+                    }, 500);
+                }
+                saveSystem();
+                updateUserStats();
+            }
+        };
+
+        function updateUserStats() {
+            const lvl = GAME.calculateLevel(STATE.user.xp);
+            const nextXp = GAME.nextLevelXp(lvl);
+            const prevXp = GAME.nextLevelXp(lvl - 1);
+            const levelRange = nextXp - prevXp;
+            const currentProgress = STATE.user.xp - prevXp;
+            const percent = Math.min(100, Math.max(0, (currentProgress / levelRange) * 100));
+
+            document.getElementById('userLevel').innerText = lvl;
+            document.getElementById('currentXp').innerText = STATE.user.xp;
+            document.getElementById('nextLevelXp').innerText = nextXp;
+            document.getElementById('xpBar').style.width = `${percent}%`;
+            
+            const titleIndex = Math.min(lvl - 1, GAME.titles.length - 1);
+            document.getElementById('userTitle').innerText = t(GAME.titles[titleIndex]);
+        }
+
+        function showFloatingText(text, sourceElement) {
+            const float = document.createElement('div');
+            float.className = 'xp-float';
+            float.innerText = text;
+            let x, y;
+            if(sourceElement && sourceElement.getBoundingClientRect) {
+                const rect = sourceElement.getBoundingClientRect();
+                x = rect.left + rect.width / 2;
+                y = rect.top;
+            } else {
+                x = window.innerWidth / 2;
+                y = window.innerHeight / 2;
+            }
+            float.style.left = `${x}px`;
+            float.style.top = `${y}px`;
+            document.body.appendChild(float);
+            setTimeout(() => float.remove(), 1500);
+        }
+
+        // --- UTILS ---
         function openHistory() {
-            AudioSys.sfx.click();
+            AudioSys.safeInit();
             const list = document.getElementById('historyList');
             list.innerHTML = '';
             
@@ -830,19 +961,75 @@
                     div.innerHTML = `
                         <div class="flex justify-between items-center mb-2 border-b border-gray-700 pb-1">
                             <span class="text-neon-cyan">${dateStr}</span>
-                            <span class="text-xs ${rec.completedCount === 3 ? 'text-neon-green' : 'text-gray-500'}">SCORE: ${rec.completedCount}/3</span>
+                            <span class="text-xs ${rec.completedCount >= 3 ? 'text-neon-green' : 'text-gray-500'}">SCORE: ${rec.completedCount}</span>
                         </div>
                         <div class="space-y-1">${taskHtml}</div>
                     `;
                     list.appendChild(div);
                 });
             }
-
             document.getElementById('historyModal').classList.remove('hidden');
         }
 
+        function toggleLang() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            AudioSys.sfx.click();
+            saveSystem();
+            renderText();
+        }
+
+        function renderText() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.innerText = t(el.dataset.i18n);
+            });
+            document.querySelectorAll('input[placeholder]').forEach(el => {
+               if(el.id.includes('taskInput')) el.placeholder = t('task_ph');
+               if(el.id === 'newSideTask') el.placeholder = t('side_ph');
+            });
+            document.getElementById('langBtn').innerText = currentLang === 'zh' ? 'EN' : '中';
+            updateUserStats();
+            updateTimerLabel();
+            // Update tab text specifically
+            document.getElementById('tab-primary').innerText = t('tab_main');
+            document.getElementById('tab-side').innerText = t('tab_side');
+        }
+        
+        function toggleChip(el) {
+            AudioSys.sfx.click();
+            if(el.style.opacity === '0.3' || el.style.opacity === '') {
+                el.style.opacity = '1';
+                el.style.transform = 'scale(1.1)';
+                el.style.boxShadow = '0 0 10px #ffaa00';
+            } else {
+                el.style.opacity = '0.3';
+                el.style.transform = 'scale(1)';
+                el.style.boxShadow = 'none';
+            }
+        }
+
+        // --- GM ---
+        function toggleGM() { document.getElementById('gmPanel').classList.toggle('open'); }
+        function gmResetTasks() { STATE.tasks.forEach(t => { t.done = false; t.text = ''; }); saveSystem(); renderTasks(); }
+        function gmFastForward() { if(STATE.timer.remaining > 60) { STATE.timer.remaining -= 60; updateTimerDisplay(); } }
+        function gmAddXp() { GAME.addXp(50); }
+        function gmClearStorage() { if(confirm('WIPE?')) { localStorage.clear(); location.reload(); } }
+
         // Boot
-        init();
+        (function init(){
+            // Sanitize
+            STATE.tasks = STATE.tasks.map(t => ({...t, done: t.text ? t.done : false }));
+            renderTasks();
+            updateTimerDisplay();
+            updateUserStats();
+            renderText();
+            document.querySelectorAll('.checklist-item').forEach(cb => cb.addEventListener('change', () => { AudioSys.sfx.click(); checkGatekeeper(); }));
+            // Bind keyboard enter for side tasks
+            document.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter' && document.activeElement.id === 'newSideTask') {
+                    addSideTask();
+                }
+            });
+        })();
     </script>
 </body>
 </html>
