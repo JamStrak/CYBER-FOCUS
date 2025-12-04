@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CYBER FOCUS // HUD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-void: #050505;
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-green: #0aff00;
+            --neon-amber: #ffaa00;
+            --grid-color: rgba(0, 243, 255, 0.1);
+            --hud-bg: rgba(10, 20, 30, 0.85);
+            --border-active: rgba(0, 243, 255, 0.6);
+            --scan-line: rgba(255, 255, 255, 0.02);
+            --font-display: 'Orbitron', sans-serif;
+            --font-mono: 'Share Tech Mono', monospace;
+        }
+
+        body {
+            background-color: var(--bg-void);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: var(--neon-cyan);
+            font-family: var(--font-mono);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* CRT Scanline Effect */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: repeating-linear-gradient(
+                0deg,
+                var(--scan-line),
+                var(--scan-line) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* HUD Panels */
+        .hud-panel {
+            background: var(--hud-bg);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.05);
+            backdrop-filter: blur(4px);
+            position: relative;
+            clip-path: polygon(
+                0 10px, 10px 0, 
+                calc(100% - 10px) 0, 100% 10px, 
+                100% calc(100% - 10px), calc(100% - 10px) 100%, 
+                10px 100%, 0 calc(100% - 10px)
+            );
+        }
+        
+        .hud-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 1px solid transparent;
+            /* Corner accents */
+            background: 
+                linear-gradient(to right, var(--neon-cyan) 2px, transparent 2px) 0 0,
+                linear-gradient(to bottom, var(--neon-cyan) 2px, transparent 2px) 0 0,
+                linear-gradient(to left, var(--neon-cyan) 2px, transparent 2px) 100% 0,
+                linear-gradient(to bottom, var(--neon-cyan) 2px, transparent 2px) 100% 0,
+                linear-gradient(to right, var(--neon-cyan) 2px, transparent 2px) 0 100%,
+                linear-gradient(to top, var(--neon-cyan) 2px, transparent 2px) 0 100%,
+                linear-gradient(to left, var(--neon-cyan) 2px, transparent 2px) 100% 100%,
+                linear-gradient(to top, var(--neon-cyan) 2px, transparent 2px) 100% 100%;
+            background-repeat: no-repeat;
+            background-size: 10px 10px;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        /* Typography */
+        h1, h2, h3, .hud-title { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.1em; }
+        .glitch-text { text-shadow: 2px 0 rgba(255,0,0,0.5), -2px 0 rgba(0,255,255,0.5); }
+
+        /* Inputs */
+        .cyber-input {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #333;
+            color: var(--neon-cyan);
+            font-family: var(--font-mono);
+            transition: 0.3s;
+        }
+        .cyber-input:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+        
+        /* Buttons */
+        .btn-cyber {
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            font-family: var(--font-display);
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 1px;
+        }
+        .btn-cyber:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+        .btn-alert {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+            background: rgba(255, 0, 85, 0.1);
+        }
+        .btn-alert:hover {
+            background: var(--neon-pink);
+            color: #fff;
+            box-shadow: 0 0 20px var(--neon-pink);
+        }
+
+        /* Timer Ring */
+        .ring-bg { stroke: rgba(255,255,255,0.1); }
+        .ring-progress {
+            transition: stroke-dashoffset 0.5s linear, stroke 0.3s;
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Checkboxes */
+        .cyber-check {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--neon-cyan);
+            background: transparent;
+            display: grid;
+            place-content: center;
+            cursor: pointer;
+        }
+        .cyber-check::before {
+            content: "";
+            width: 12px;
+            height: 12px;
+            transform: scale(0);
+            background: var(--neon-cyan);
+            transition: 120ms transform ease-in-out;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+        .cyber-check:checked::before { transform: scale(1); }
+
+        /* GM Tool */
+        .gm-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            background: #111;
+            border: 1px solid var(--neon-amber);
+            transform: translateY(120%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10000;
+        }
+        .gm-panel.open { transform: translateY(0); }
+        .gm-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: #000;
+            border: 1px solid #333;
+            color: #333;
+            font-size: 10px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            z-index: 10001;
+            opacity: 0.3;
+        }
+        .gm-toggle:hover { opacity: 1; border-color: var(--neon-amber); color: var(--neon-amber); }
+
+        /* Animation */
+        @keyframes scan { 0% { background-position: 0 0; } 100% { background-position: 0 100vh; } }
+        .animate-pulse-fast { animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body class="p-4 md:p-8 max-w-7xl mx-auto flex flex-col gap-6">
+
+    <!-- Header -->
+    <header class="flex justify-between items-end border-b border-gray-800 pb-4">
+        <div>
+            <div class="text-[10px] text-gray-500 mb-1 tracking-[0.3em]">SYSTEM_READY</div>
+            <h1 class="text-3xl md:text-4xl font-bold glitch-text">FOCUS_OS <span class="text-xs align-top opacity-50">v2.4</span></h1>
+        </div>
+        <div class="text-right hidden md:block">
+            <div class="text-[10px] text-neon-green animate-pulse">CONNECTION: SECURE</div>
+            <div class="text-xl font-mono" id="realtimeClock">00:00:00</div>
+        </div>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
+        
+        <!-- LEFT COLUMN: ENGINE (Timer) -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            <div class="hud-panel p-6 relative overflow-hidden group">
+                <div class="absolute top-2 right-2 text-[10px] text-gray-600 border border-gray-800 px-1">MODULE_01</div>
+                
+                <!-- Timer Selection Grid -->
+                <div class="grid grid-cols-4 gap-2 mb-8">
+                    <button onclick="preFlightCheck(90, 'sprint')" class="timer-preset btn-cyber py-2 text-xs font-bold" data-mode="sprint">90m<br><span class="text-[9px] opacity-70">ASSAULT</span></button>
+                    <button onclick="setTimerDirect(25, 'pomodoro')" class="timer-preset btn-cyber py-2 text-xs font-bold" data-mode="pomodoro">25m<br><span class="text-[9px] opacity-70">SKIRMISH</span></button>
+                    <button onclick="setTimerDirect(20, 'break')" class="timer-preset btn-alert py-2 text-xs font-bold" data-mode="break">20m<br><span class="text-[9px] opacity-70">REBOOT</span></button>
+                    <button onclick="setTimerDirect(5, 'break')" class="timer-preset btn-alert py-2 text-xs font-bold" data-mode="short">05m<br><span class="text-[9px] opacity-70">COOL</span></button>
+                </div>
+
+                <!-- Main Timer Vis -->
+                <div class="relative w-72 h-72 mx-auto flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90">
+                        <circle class="ring-bg" cx="144" cy="144" r="130" stroke-width="4" fill="none"></circle>
+                        <circle id="progressRing" class="ring-progress" cx="144" cy="144" r="130" stroke-width="8" fill="none" stroke="var(--neon-cyan)" stroke-dasharray="816.8" stroke-dashoffset="0"></circle>
+                    </svg>
+                    
+                    <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
+                        <div id="modeLabel" class="text-xs tracking-[0.4em] text-gray-400 mb-2">IDLE</div>
+                        <div id="timerDisplay" class="text-6xl font-mono font-bold tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">00:00</div>
+                        
+                        <div class="flex gap-4 mt-6">
+                            <button id="mainActionBtn" onclick="toggleTimer()" class="w-12 h-12 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black flex items-center justify-center rounded-sm transition shadow-[0_0_15px_rgba(0,243,255,0.2)]">
+                                ▶
+                            </button>
+                            <button onclick="resetTimer()" class="w-12 h-12 border border-red-500 text-red-500 hover:bg-red-500 hover:text-black flex items-center justify-center rounded-sm transition">
+                                ■
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Decor rings -->
+                    <div class="absolute inset-0 border border-gray-800 rounded-full scale-75 opacity-20 border-dashed animate-[spin_10s_linear_infinite]"></div>
+                    <div class="absolute inset-0 border border-neon-cyan rounded-full scale-110 opacity-10 animate-pulse"></div>
+                </div>
+            </div>
+
+            <!-- Chips Section -->
+            <div class="hud-panel p-4 flex flex-col items-center">
+                <div class="w-full flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
+                    <span class="text-xs text-neon-amber tracking-widest">ATTENTION_CHIPS</span>
+                    <span class="text-[10px] text-gray-500">MANUAL_OVERRIDE</span>
+                </div>
+                <div class="flex gap-4">
+                    <div class="chip w-12 h-12 border-2 border-neon-amber bg-neon-amber/20 cursor-pointer hover:bg-neon-amber hover:shadow-[0_0_20px_#ffaa00] transition-all duration-300 clip-hex flex items-center justify-center text-xs font-bold text-neon-amber hover:text-black" onclick="toggleChip(this)">I</div>
+                    <div class="chip w-12 h-12 border-2 border-neon-amber bg-neon-amber/20 cursor-pointer hover:bg-neon-amber hover:shadow-[0_0_20px_#ffaa00] transition-all duration-300 clip-hex flex items-center justify-center text-xs font-bold text-neon-amber hover:text-black" onclick="toggleChip(this)">II</div>
+                    <div class="chip w-12 h-12 border-2 border-neon-amber bg-neon-amber/20 cursor-pointer hover:bg-neon-amber hover:shadow-[0_0_20px_#ffaa00] transition-all duration-300 clip-hex flex items-center justify-center text-xs font-bold text-neon-amber hover:text-black" onclick="toggleChip(this)">III</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER COLUMN: MISSION (Tasks) -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+            <div class="hud-panel p-6 h-full flex flex-col">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-2xl text-white">PRIMARY_OBJECTIVES</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1">PROTOCOL: 3_TASKS_MAX // DAY_CYCLE</p>
+                    </div>
+                    <div class="text-right">
+                        <div id="taskProgress" class="text-4xl font-display text-neon-green">0/3</div>
+                    </div>
+                </div>
+
+                <div id="taskList" class="flex-1 flex flex-col gap-4">
+                    <!-- Tasks will be injected here -->
+                </div>
+
+                <!-- Maintenance / Side Quests -->
+                <div class="mt-8 pt-4 border-t border-gray-800">
+                    <h3 class="text-xs text-gray-400 mb-3 tracking-widest">MAINTENANCE_LOG (SIDE_TASKS)</h3>
+                    <div class="flex gap-2 mb-3">
+                        <input type="text" id="maintenanceInput" class="cyber-input flex-1 px-3 py-2 text-sm" placeholder="> INPUT_DATA...">
+                        <button onclick="addMaintenance()" class="btn-cyber px-4 text-sm">+</button>
+                    </div>
+                    <div id="maintenanceList" class="space-y-2 max-h-32 overflow-y-auto font-mono text-sm text-gray-400">
+                        <!-- Maintenance items -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FLOW STATE GATEKEEPER MODAL -->
+    <div id="flowCheckModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+        <div class="hud-panel max-w-lg w-full p-8 border-neon-cyan box-shadow-[0_0_50px_rgba(0,243,255,0.2)] transform transition-all scale-100">
+            <h2 class="text-2xl text-neon-cyan mb-2 text-center">INITIATE DEEP DIVE</h2>
+            <p class="text-center text-gray-400 text-xs font-mono mb-8">PRE-FLIGHT CHECKLIST REQUIRED FOR ENGINE START</p>
+            
+            <div class="space-y-4 mb-8">
+                <label class="flex items-center gap-4 p-3 border border-gray-800 hover:border-neon-cyan transition bg-black/40 cursor-pointer group">
+                    <input type="checkbox" class="cyber-check checklist-item">
+                    <div class="flex-1">
+                        <div class="text-sm font-bold text-white group-hover:text-neon-cyan">OBJECTIVE LOCKED</div>
+                        <div class="text-[10px] text-gray-500">One clear goal defined for the next 90m.</div>
+                    </div>
+                </label>
+                <label class="flex items-center gap-4 p-3 border border-gray-800 hover:border-neon-cyan transition bg-black/40 cursor-pointer group">
+                    <input type="checkbox" class="cyber-check checklist-item">
+                    <div class="flex-1">
+                        <div class="text-sm font-bold text-white group-hover:text-neon-cyan">COMMS SILENCED</div>
+                        <div class="text-[10px] text-gray-500">Phone DND, Slack closed, Door locked.</div>
+                    </div>
+                </label>
+                <label class="flex items-center gap-4 p-3 border border-gray-800 hover:border-neon-cyan transition bg-black/40 cursor-pointer group">
+                    <input type="checkbox" class="cyber-check checklist-item">
+                    <div class="flex-1">
+                        <div class="text-sm font-bold text-white group-hover:text-neon-cyan">BIO-METRICS STABLE</div>
+                        <div class="text-[10px] text-gray-500">Hydrated, caffeinated, fed.</div>
+                    </div>
+                </label>
+                <label class="flex items-center gap-4 p-3 border border-gray-800 hover:border-neon-cyan transition bg-black/40 cursor-pointer group">
+                    <input type="checkbox" class="cyber-check checklist-item">
+                    <div class="flex-1">
+                        <div class="text-sm font-bold text-white group-hover:text-neon-cyan">90 MINUTE COMMITMENT</div>
+                        <div class="text-[10px] text-gray-500">I will not stop until the timer hits zero.</div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="closeModal()" class="flex-1 py-3 border border-gray-700 text-gray-500 hover:text-white font-mono text-sm uppercase">Abort</button>
+                <button id="engageBtn" onclick="confirmStart()" class="flex-1 py-3 bg-neon-cyan/10 border border-neon-cyan text-neon-cyan font-bold font-display uppercase tracking-widest opacity-50 cursor-not-allowed" disabled>ENGAGE SYSTEM</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GM / DEV TOOLS (Hidden) -->
+    <div class="gm-toggle" onclick="document.querySelector('.gm-panel').classList.toggle('open')">GM</div>
+    <div class="gm-panel p-4 font-mono text-xs">
+        <div class="text-neon-amber mb-3 font-bold border-b border-gray-700 pb-1">GOD_MODE // DEBUG</div>
+        <div class="grid grid-cols-2 gap-2">
+            <button onclick="gmResetTasks()" class="border border-gray-600 p-2 hover:bg-gray-800 text-left">RESET TASKS</button>
+            <button onclick="gmResetTimer()" class="border border-gray-600 p-2 hover:bg-gray-800 text-left">RESET TIMER</button>
+            <button onclick="gmFastForward()" class="border border-gray-600 p-2 hover:bg-gray-800 text-left">FFWD 1 MIN</button>
+            <button onclick="gmCompleteTask()" class="border border-gray-600 p-2 hover:bg-gray-800 text-left">AUTO COMPLETE</button>
+            <button onclick="gmClearStorage()" class="col-span-2 border border-red-900 text-red-500 p-2 hover:bg-red-900/20 text-center">WIPE LOCAL DATA</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CORE SYSTEM VARIABLES ---
+        const STATE = {
+            tasks: JSON.parse(localStorage.getItem('cyber_tasks')) || [
+                { id: 1, text: '', done: false },
+                { id: 2, text: '', done: false },
+                { id: 3, text: '', done: false }
+            ],
+            maintenance: JSON.parse(localStorage.getItem('cyber_maint')) || [],
+            timer: {
+                totalSeconds: 5400,
+                remaining: 5400,
+                active: false,
+                mode: 'sprint', // sprint, pomodoro, break, short
+                interval: null
+            }
+        };
+
+        const UI = {
+            timerDisplay: document.getElementById('timerDisplay'),
+            ring: document.getElementById('progressRing'),
+            modeLabel: document.getElementById('modeLabel'),
+            taskList: document.getElementById('taskList'),
+            maintList: document.getElementById('maintenanceList'),
+            modal: document.getElementById('flowCheckModal'),
+            engageBtn: document.getElementById('engageBtn')
+        };
+
+        const CONFIG = {
+            sprint: { time: 90 * 60, color: '#00f3ff', label: 'DEEP_SPRINT' },
+            pomodoro: { time: 25 * 60, color: '#00f3ff', label: 'SKIRMISH' },
+            break: { time: 20 * 60, color: '#0aff00', label: 'SYS_RECHARGE' },
+            short: { time: 5 * 60, color: '#0aff00', label: 'COOL_DOWN' }
+        };
+
+        // --- INITIALIZATION ---
+        function init() {
+            renderTasks();
+            renderMaintenance();
+            updateTimerDisplay();
+            updateRealtimeClock();
+            setInterval(updateRealtimeClock, 1000);
+            
+            // Checklist Logic
+            document.querySelectorAll('.checklist-item').forEach(cb => {
+                cb.addEventListener('change', checkGatekeeper);
+            });
+        }
+
+        function saveSystem() {
+            localStorage.setItem('cyber_tasks', JSON.stringify(STATE.tasks));
+            localStorage.setItem('cyber_maint', JSON.stringify(STATE.maintenance));
+        }
+
+        // --- TIMER ENGINE ---
+        function updateTimerDisplay() {
+            const m = Math.floor(STATE.timer.remaining / 60);
+            const s = STATE.timer.remaining % 60;
+            UI.timerDisplay.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            
+            // Ring Progress
+            const circumference = 816.8;
+            const offset = circumference - (STATE.timer.remaining / STATE.timer.totalSeconds) * circumference;
+            UI.ring.style.strokeDashoffset = offset;
+            
+            // Color & Label
+            const currentConfig = CONFIG[STATE.timer.mode];
+            UI.ring.style.stroke = currentConfig.color;
+            UI.modeLabel.textContent = currentConfig.label;
+            UI.modeLabel.style.color = currentConfig.color;
+        }
+
+        function toggleTimer() {
+            if (STATE.timer.active) {
+                clearInterval(STATE.timer.interval);
+                STATE.timer.active = false;
+                document.getElementById('mainActionBtn').innerHTML = '▶';
+            } else {
+                if (STATE.timer.remaining <= 0) return;
+                
+                // If starting a SPRINT and not active, maybe enforce checklist? 
+                // We do that via the preset buttons.
+                
+                startTicker();
+            }
+        }
+
+        function startTicker() {
+            STATE.timer.active = true;
+            document.getElementById('mainActionBtn').innerHTML = '❚❚';
+            
+            STATE.timer.interval = setInterval(() => {
+                if (STATE.timer.remaining > 0) {
+                    STATE.timer.remaining--;
+                    updateTimerDisplay();
+                } else {
+                    completeTimer();
+                }
+            }, 1000);
+        }
+
+        function completeTimer() {
+            clearInterval(STATE.timer.interval);
+            STATE.timer.active = false;
+            document.getElementById('mainActionBtn').innerHTML = '▶';
+            
+            // FX
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#00f3ff', '#ff0055', '#ffffff']
+            });
+
+            // Auto switch suggestion
+            if (STATE.timer.mode === 'sprint') {
+                setTimeout(() => setTimerDirect(20, 'break'), 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(STATE.timer.interval);
+            STATE.timer.active = false;
+            STATE.timer.remaining = STATE.timer.totalSeconds;
+            document.getElementById('mainActionBtn').innerHTML = '▶';
+            updateTimerDisplay();
+        }
+
+        // Direct Set (for short timers)
+        function setTimerDirect(min, mode) {
+            clearInterval(STATE.timer.interval);
+            STATE.timer.active = false;
+            STATE.timer.mode = mode;
+            STATE.timer.totalSeconds = min * 60;
+            STATE.timer.remaining = min * 60;
+            document.getElementById('mainActionBtn').innerHTML = '▶';
+            updateTimerDisplay();
+        }
+
+        // Pre-Flight Check (for heavy timers)
+        function preFlightCheck(min, mode) {
+            UI.modal.classList.remove('hidden');
+            // Store intent
+            UI.modal.dataset.targetMin = min;
+            UI.modal.dataset.targetMode = mode;
+            
+            // Reset checks
+            document.querySelectorAll('.checklist-item').forEach(cb => cb.checked = false);
+            checkGatekeeper();
+        }
+
+        function closeModal() {
+            UI.modal.classList.add('hidden');
+        }
+
+        function checkGatekeeper() {
+            const allChecked = Array.from(document.querySelectorAll('.checklist-item')).every(cb => cb.checked);
+            if (allChecked) {
+                UI.engageBtn.disabled = false;
+                UI.engageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                UI.engageBtn.classList.add('hover:bg-neon-cyan', 'hover:text-black');
+            } else {
+                UI.engageBtn.disabled = true;
+                UI.engageBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                UI.engageBtn.classList.remove('hover:bg-neon-cyan', 'hover:text-black');
+            }
+        }
+
+        function confirmStart() {
+            const min = UI.modal.dataset.targetMin;
+            const mode = UI.modal.dataset.targetMode;
+            closeModal();
+            setTimerDirect(min, mode);
+            startTicker();
+        }
+
+        // --- TASK SYSTEM ---
+        function renderTasks() {
+            UI.taskList.innerHTML = '';
+            let completed = 0;
+            
+            STATE.tasks.forEach((task, index) => {
+                if(task.done) completed++;
+                
+                const div = document.createElement('div');
+                div.className = `flex items-center gap-4 p-4 border transition-all duration-300 ${task.done ? 'border-neon-green bg-neon-green/10' : 'border-gray-800 bg-black/40 hover:border-neon-cyan'}`;
+                
+                div.innerHTML = `
+                    <div class="font-mono text-xs opacity-50">0${index+1}</div>
+                    <input type="text" 
+                        value="${task.text}" 
+                        class="flex-1 bg-transparent border-none outline-none text-white font-mono placeholder-gray-700 ${task.done ? 'line-through text-neon-green' : ''}"
+                        placeholder="> DEFINE_OBJECTIVE..."
+                        onchange="updateTaskText(${index}, this.value)"
+                        ${task.done ? 'disabled' : ''}
+                    >
+                    <button onclick="toggleTask(${index})" class="w-8 h-8 border flex items-center justify-center transition ${task.done ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-700 hover:border-neon-cyan hover:text-neon-cyan'}">
+                        ${task.done ? '✓' : '⚡'}
+                    </button>
+                `;
+                UI.taskList.appendChild(div);
+            });
+            
+            document.getElementById('taskProgress').textContent = `${completed}/3`;
+            document.getElementById('taskProgress').className = `text-4xl font-display ${completed === 3 ? 'text-neon-green glitch-text' : 'text-white'}`;
+        }
+
+        function updateTaskText(index, val) {
+            STATE.tasks[index].text = val;
+            saveSystem();
+        }
+
+        function toggleTask(index) {
+            STATE.tasks[index].done = !STATE.tasks[index].done;
+            saveSystem();
+            renderTasks();
+            
+            if(STATE.tasks[index].done) {
+                // Mini FX
+                const btn = UI.taskList.children[index].querySelector('button');
+                const rect = btn.getBoundingClientRect();
+                confetti({
+                    particleCount: 50,
+                    spread: 60,
+                    origin: {
+                        x: rect.x / window.innerWidth,
+                        y: rect.y / window.innerHeight
+                    },
+                    colors: ['#0aff00']
+                });
+            }
+        }
+
+        // --- MAINTENANCE / CHIPS ---
+        function addMaintenance() {
+            const input = document.getElementById('maintenanceInput');
+            if(!input.value.trim()) return;
+            
+            STATE.maintenance.push({text: input.value, done: false});
+            input.value = '';
+            saveSystem();
+            renderMaintenance();
+        }
+
+        function renderMaintenance() {
+            UI.maintList.innerHTML = '';
+            STATE.maintenance.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center group hover:bg-white/5 p-1 px-2 rounded";
+                div.innerHTML = `
+                    <span class="text-neon-cyan/70">> ${item.text}</span>
+                    <button onclick="delMaint(${index})" class="text-red-500 opacity-0 group-hover:opacity-100 hover:text-red-400">×</button>
+                `;
+                UI.maintList.appendChild(div);
+            });
+        }
+
+        function delMaint(index) {
+            STATE.maintenance.splice(index, 1);
+            saveSystem();
+            renderMaintenance();
+        }
+
+        function toggleChip(el) {
+            if(el.style.opacity === '0.2') {
+                el.style.opacity = '1';
+                el.style.transform = 'scale(1)';
+                el.style.boxShadow = '';
+            } else {
+                el.style.opacity = '0.2';
+                el.style.transform = 'scale(0.8)';
+                el.style.boxShadow = 'none';
+            }
+        }
+
+        // --- UTILS ---
+        function updateRealtimeClock() {
+            const now = new Date();
+            document.getElementById('realtimeClock').innerText = now.toLocaleTimeString('en-US', {hour12: false});
+        }
+
+        // --- GM TOOLS ---
+        function gmResetTasks() {
+            STATE.tasks.forEach(t => { t.done = false; t.text = ''; });
+            saveSystem();
+            renderTasks();
+            alert('SYSTEM: TASKS RESET');
+        }
+        function gmResetTimer() {
+            resetTimer();
+        }
+        function gmFastForward() {
+            if(STATE.timer.remaining > 60) {
+                STATE.timer.remaining -= 60;
+                updateTimerDisplay();
+            }
+        }
+        function gmClearStorage() {
+            if(confirm('WIPE ALL DATA?')) {
+                localStorage.removeItem('cyber_tasks');
+                localStorage.removeItem('cyber_maint');
+                location.reload();
+            }
+        }
+        function gmCompleteTask() {
+             const todo = STATE.tasks.find(t => !t.done);
+             if(todo) {
+                 todo.text = todo.text || "AUTO_COMPLETED_TASK";
+                 todo.done = true;
+                 saveSystem();
+                 renderTasks();
+             }
+        }
+
+        // Boot
+        init();
+    </script>
+</body>
+</html>
