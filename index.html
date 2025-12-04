@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CYBER FOCUS // HUD v3.1</title>
+    <title>CYBER FOCUS // HUD v3.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -18,11 +18,16 @@
                         pink: '#ff0055',
                         green: '#0aff00',
                         amber: '#ffaa00',
+                        dark: '#0a0f14',
+                        glass: 'rgba(10, 15, 20, 0.85)'
                     },
                     fontFamily: {
                         display: ['Orbitron', 'sans-serif'],
                         mono: ['Share Tech Mono', 'monospace'],
                         sc: ['Noto Sans SC', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
@@ -36,144 +41,118 @@
             --neon-pink: #ff0055;
             --neon-green: #0aff00;
             --neon-amber: #ffaa00;
-            --grid-color: rgba(0, 243, 255, 0.1);
-            --hud-bg: rgba(10, 20, 30, 0.92);
-            --scan-line: rgba(255, 255, 255, 0.02);
         }
 
         body {
             background-color: var(--bg-void);
             background-image: 
-                linear-gradient(var(--grid-color) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-            background-size: 30px 30px;
+                radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(rgba(0, 243, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 20px 20px, 20px 20px;
             color: var(--neon-cyan);
             font-family: 'Share Tech Mono', 'Noto Sans SC', monospace;
             min-height: 100vh;
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* 移动端触摸优化 */
-        button, input, .chip { touch-action: manipulation; }
-
-        /* CRT Scanline Effect */
-        body::after {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: repeating-linear-gradient(0deg, var(--scan-line), var(--scan-line) 1px, transparent 1px, transparent 2px);
-            pointer-events: none;
-            z-index: 9999;
-            opacity: 0.7;
-        }
-
-        /* HUD Panels */
+        /* UI Components */
         .hud-panel {
-            background: var(--hud-bg);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.05);
-            backdrop-filter: blur(8px);
-            position: relative;
-            clip-path: polygon(0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px));
-            transition: all 0.3s ease;
+            background: var(--glass);
+            border: 1px solid rgba(0, 243, 255, 0.15);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
         }
 
-        .hud-panel::before {
-            content: ''; position: absolute; inset: 0; pointer-events: none;
-            background: linear-gradient(to right, var(--neon-cyan) 2px, transparent 2px) 0 0, linear-gradient(to bottom, var(--neon-cyan) 2px, transparent 2px) 0 0, linear-gradient(to left, var(--neon-cyan) 2px, transparent 2px) 100% 100%, linear-gradient(to top, var(--neon-cyan) 2px, transparent 2px) 100% 100%;
-            background-repeat: no-repeat; background-size: 8px 8px; opacity: 0.6;
-        }
-
-        /* Typography */
-        h1, h2, h3, .hud-title { font-family: 'Orbitron', 'Noto Sans SC', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; }
         .glitch-text { text-shadow: 2px 0 rgba(255,0,0,0.5), -2px 0 rgba(0,255,255,0.5); }
-
-        /* XP Bar */
-        .xp-container { height: 4px; background: #111; border: 1px solid #333; position: relative; overflow: hidden; }
-        .xp-fill { height: 100%; background: var(--neon-amber); width: 0%; box-shadow: 0 0 10px var(--neon-amber); transition: width 0.5s ease-out; }
-
-        /* Mobile Inputs */
-        .cyber-input {
-            background: rgba(0,0,0,0.6); border: 1px solid #333; color: var(--neon-cyan);
-            font-family: inherit; transition: 0.3s; border-radius: 0; appearance: none;
-        }
-        .cyber-input:focus { outline: none; border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); }
-        .cyber-input:disabled { opacity: 0.5; color: var(--neon-green); border-color: transparent; }
         
         /* Buttons */
-        .btn-cyber {
-            background: rgba(0, 243, 255, 0.05); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);
-            text-transform: uppercase; font-family: 'Orbitron', sans-serif; transition: all 0.2s;
-            position: relative; overflow: hidden; letter-spacing: 1px;
-            min-height: 44px; display: flex; align-items: center; justify-content: center;
+        .btn-control {
+            width: 56px; height: 56px;
+            display: flex; align-items: center; justify-content: center;
+            clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+            transition: all 0.2s;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid currentColor;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
-        .btn-cyber:active { background: var(--neon-cyan); color: #000; box-shadow: 0 0 20px var(--neon-cyan); }
-        .btn-alert { border-color: var(--neon-pink); color: var(--neon-pink); background: rgba(255, 0, 85, 0.05); }
-        .btn-alert:active { background: var(--neon-pink); color: #fff; box-shadow: 0 0 20px var(--neon-pink); }
-
-        /* Timer Ring */
-        .ring-bg { stroke: rgba(255,255,255,0.05); }
-        .ring-progress { transition: stroke-dashoffset 1s linear, stroke 0.3s; filter: drop-shadow(0 0 4px currentColor); }
-
-        /* Modals */
-        .modal-overlay { background: rgba(0,0,0,0.95); backdrop-filter: blur(5px); transition: opacity 0.3s; }
+        .btn-control:active { transform: scale(0.92); box-shadow: 0 0 0 transparent; }
         
-        /* Checkboxes */
-        .cyber-check {
-            appearance: none; width: 24px; height: 24px; border: 1px solid var(--neon-cyan);
-            background: transparent; display: grid; place-content: center; margin-right: 10px;
+        .btn-mode {
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            transition: all 0.2s;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
         }
-        .cyber-check::before {
-            content: ""; width: 14px; height: 14px; transform: scale(0);
-            background: var(--neon-cyan); transition: 120ms transform ease-in-out;
-            box-shadow: 0 0 10px var(--neon-cyan);
+        .btn-mode.active {
+            background: var(--neon-cyan);
+            color: black;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+            border-color: var(--neon-cyan);
         }
-        .cyber-check:checked::before { transform: scale(1); }
 
-        /* Floating XP Text */
-        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
-        .xp-float { position: absolute; color: var(--neon-amber); font-weight: bold; pointer-events: none; animation: floatUp 1.5s forwards; z-index: 50; text-shadow: 0 0 5px black; font-size: 1.2rem; }
-
-        /* GM Panel */
-        .gm-panel {
-            position: fixed; bottom: 0; right: 0; width: 100%; max-width: 320px;
-            background: #0a0a0a; border-top: 2px solid var(--neon-amber); border-left: 2px solid var(--neon-amber);
-            transform: translateY(110%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 10000; padding: 20px; box-shadow: -5px -5px 20px rgba(0,0,0,0.8);
+        /* Flow Lights */
+        .flow-slot {
+            width: 12px; height: 6px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            transform: skewX(-20deg);
+            transition: all 0.5s;
         }
-        .gm-panel.open { transform: translateY(0); }
-        .gm-toggle {
-            position: fixed; bottom: 20px; right: 20px;
-            width: 40px; height: 40px; background: #000; border: 1px solid #333; color: #333;
-            font-size: 10px; display: grid; place-items: center; cursor: pointer; z-index: 9000; opacity: 0.5;
+        .flow-slot.active {
+            background: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+            border-color: #fff;
         }
-        .gm-toggle:active, .gm-toggle:hover { opacity: 1; border-color: var(--neon-amber); color: var(--neon-amber); }
 
-        .safe-pb { padding-bottom: max(80px, env(safe-area-inset-bottom)); } /* Added extra padding for GM button */
+        /* Heatmap */
+        .heatmap-cell {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s;
+        }
+        .heatmap-cell.l1 { background: rgba(0, 243, 255, 0.2); border-color: rgba(0, 243, 255, 0.3); }
+        .heatmap-cell.l2 { background: rgba(0, 243, 255, 0.5); border-color: rgba(0, 243, 255, 0.6); box-shadow: 0 0 5px rgba(0, 243, 255, 0.3); }
+        .heatmap-cell.l3 { background: var(--neon-cyan); border-color: #fff; box-shadow: 0 0 10px var(--neon-cyan); }
+        
+        /* Modal & Animations */
+        .modal-overlay { background: rgba(0,0,0,0.9); backdrop-filter: blur(5px); }
+        .cyber-scroll::-webkit-scrollbar { width: 4px; }
+        .cyber-scroll::-webkit-scrollbar-thumb { background: var(--neon-cyan); }
+        .cyber-scroll::-webkit-scrollbar-track { background: #111; }
     </style>
 </head>
-<body class="p-3 md:p-6 max-w-5xl mx-auto flex flex-col gap-4 safe-pb" onclick="initAudioContext()">
+<body class="p-3 md:p-6 max-w-5xl mx-auto flex flex-col gap-4 safe-pb text-sm">
 
-    <!-- Header & Stats -->
+    <!-- Header -->
     <header class="flex flex-col gap-3 border-b border-gray-800 pb-3">
         <div class="flex justify-between items-start">
-            <div>
-                <div class="text-[10px] text-gray-500 mb-0 tracking-[0.2em] flex items-center gap-2">
-                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span data-i18n="system_online">系统在线</span>
+            <div class="flex items-center gap-3">
+                <div id="realTimeClock" class="text-3xl font-display font-bold text-white tracking-widest">00:00</div>
+                <div class="flex flex-col">
+                    <div class="text-[10px] text-gray-500 tracking-[0.2em] flex items-center gap-2">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        <span data-i18n="system_online">ONLINE</span>
+                    </div>
+                    <div class="text-[10px] text-cyan opacity-70">HUD v3.4</div>
                 </div>
-                <h1 class="text-2xl md:text-4xl font-bold glitch-text flex items-center gap-2">
-                    FOCUS_OS <span class="text-xs align-top opacity-50 bg-cyan-900/30 px-1 rounded">v3.1</span>
-                </h1>
             </div>
+            
             <div class="flex gap-2">
-                <button onclick="toggleLang()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-cyan hover:text-cyan transition" id="langBtn">EN</button>
-                <button onclick="openHistory()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-amber hover:text-amber transition" data-i18n="history_btn">档案</button>
+                <!-- GM Button -->
+                <button onclick="toggleGM()" class="text-gray-700 hover:text-white font-mono px-2" title="GM Access">&lt;_&gt;</button>
+                <button onclick="toggleLang()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-cyan transition" id="langBtn">EN</button>
+                <button onclick="openHistory()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-amber hover:text-amber transition flex items-center gap-1">
+                    <span data-i18n="history_btn">档案</span>
+                </button>
             </div>
         </div>
 
-        <!-- RPG Stats Bar -->
+        <!-- RPG Stats -->
         <div class="flex items-center gap-3 text-xs font-mono">
             <div class="text-amber">LVL <span id="userLevel" class="text-base font-bold">1</span></div>
             <div class="flex-1 flex flex-col gap-1">
@@ -181,81 +160,97 @@
                     <span id="userTitle" class="text-cyan">义体乞丐</span>
                     <span><span id="currentXp">0</span> / <span id="nextLevelXp">100</span> XP</span>
                 </div>
-                <div class="xp-container">
-                    <div id="xpBar" class="xp-fill"></div>
+                <div class="h-1 bg-gray-900 border border-gray-800 relative overflow-hidden">
+                    <div id="xpBar" class="h-full bg-amber shadow-[0_0_10px_orange] transition-all duration-500 w-0"></div>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+    <main class="grid grid-cols-1 md:grid-cols-2 gap-4">
         
-        <!-- MODULE: TIMER -->
+        <!-- MODULE: TIMER & CONTROL DECK -->
         <div class="flex flex-col gap-4">
-            <div class="hud-panel p-4 relative overflow-hidden group">
-                <div class="absolute top-2 right-2 text-[10px] text-gray-600 border border-gray-800 px-1" data-i18n="module_timer">计时核心</div>
+            <div class="hud-panel p-4 relative overflow-hidden flex flex-col items-center">
+                <div class="absolute top-2 left-3 text-[10px] text-gray-600 border-l-2 border-cyan pl-2" data-i18n="module_timer">计时核心</div>
                 
-                <!-- Timer Vis -->
-                <div class="relative w-56 h-56 mx-auto flex items-center justify-center my-4">
-                    <svg class="w-full h-full transform -rotate-90">
-                        <circle class="ring-bg" cx="112" cy="112" r="100" stroke-width="4" fill="none"></circle>
-                        <circle id="progressRing" class="ring-progress" cx="112" cy="112" r="100" stroke-width="6" fill="none" stroke="var(--neon-cyan)" stroke-dasharray="628" stroke-dashoffset="0"></circle>
-                    </svg>
+                <!-- Center Stage: Buttons + Ring -->
+                <div class="flex items-center justify-center w-full gap-2 mt-6 mb-2">
                     
-                    <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
-                        <div id="modeLabel" class="text-[10px] tracking-[0.2em] text-gray-400 mb-1" data-i18n="status_idle">待机</div>
-                        <div id="timerDisplay" class="text-5xl font-mono font-bold tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">00:00</div>
-                        
-                        <div class="flex gap-4 mt-4">
-                            <button id="mainActionBtn" onclick="toggleTimer()" class="w-12 h-12 border border-neon-cyan text-neon-cyan active:bg-neon-cyan active:text-black flex items-center justify-center rounded-sm transition shadow-[0_0_15px_rgba(0,243,255,0.2)] text-xl">
-                                ▶
-                            </button>
-                            <button onclick="resetTimer()" class="w-12 h-12 border border-red-500 text-red-500 active:bg-red-500 active:text-black flex items-center justify-center rounded-sm transition text-xl">
-                                ■
-                            </button>
+                    <!-- Left: Stop Button -->
+                    <button onclick="triggerStop()" class="btn-control text-pink-500 hover:bg-pink-500 hover:text-white group">
+                        <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+                    </button>
+
+                    <!-- Center: Ring -->
+                    <div class="relative w-48 h-48 flex-shrink-0">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle cx="96" cy="96" r="88" stroke-width="2" stroke="rgba(255,255,255,0.05)" fill="none"></circle>
+                            <circle id="progressRing" cx="96" cy="96" r="88" stroke-width="4" fill="none" stroke="var(--neon-cyan)" stroke-dasharray="552" stroke-dashoffset="0" class="transition-all duration-300"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
+                            <div id="modeLabel" class="text-[10px] tracking-[0.2em] text-gray-400 mb-1">READY</div>
+                            <div id="timerDisplay" class="text-4xl font-mono font-bold tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">00:00</div>
+                            
+                            <!-- Flow Lights (New) -->
+                            <div class="flex gap-1 mt-2" id="flowLightsContainer">
+                                <div class="flow-slot"></div>
+                                <div class="flow-slot"></div>
+                                <div class="flow-slot"></div>
+                                <div class="flow-slot"></div>
+                                <div class="flow-slot"></div>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Right: Play/Pause Button -->
+                    <button id="mainActionBtn" onclick="toggleTimer()" class="btn-control text-cyan hover:bg-cyan hover:text-black group">
+                        <!-- Play -->
+                        <svg id="iconPlay" class="w-8 h-8 fill-current ml-1" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <!-- Pause -->
+                        <svg id="iconPause" class="w-8 h-8 fill-current hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
                 </div>
 
-                <!-- Timer Controls -->
-                <div class="grid grid-cols-4 gap-2">
-                    <button onclick="preFlightCheck(90, 'sprint')" class="timer-preset btn-cyber py-1 text-xs font-bold leading-tight" data-mode="sprint">90m<br><span class="text-[8px] opacity-70" data-i18n="mode_deep">深潜</span></button>
-                    <button onclick="setTimerDirect(25, 'pomodoro')" class="timer-preset btn-cyber py-1 text-xs font-bold leading-tight" data-mode="pomodoro">25m<br><span class="text-[8px] opacity-70" data-i18n="mode_skirmish">突袭</span></button>
-                    <button onclick="setTimerDirect(15, 'break')" class="timer-preset btn-alert py-1 text-xs font-bold leading-tight" data-mode="break">15m<br><span class="text-[8px] opacity-70" data-i18n="mode_reboot">重启</span></button>
-                    <button onclick="setTimerDirect(5, 'short')" class="timer-preset btn-alert py-1 text-xs font-bold leading-tight" data-mode="short">05m<br><span class="text-[8px] opacity-70" data-i18n="mode_cool">冷却</span></button>
-                </div>
-            </div>
-
-            <!-- Chips / Manual Overrides -->
-            <div class="hud-panel p-3 flex justify-between items-center">
-                <span class="text-[10px] text-amber tracking-widest" data-i18n="chips_label">神经芯片</span>
-                <div class="flex gap-3">
-                    <div class="chip w-10 h-10 border border-amber bg-amber/10 active:bg-amber active:text-black transition-all cursor-pointer flex items-center justify-center text-[10px] font-bold text-amber opacity-30" onclick="toggleChip(this)">α</div>
-                    <div class="chip w-10 h-10 border border-amber bg-amber/10 active:bg-amber active:text-black transition-all cursor-pointer flex items-center justify-center text-[10px] font-bold text-amber opacity-30" onclick="toggleChip(this)">β</div>
-                    <div class="chip w-10 h-10 border border-amber bg-amber/10 active:bg-amber active:text-black transition-all cursor-pointer flex items-center justify-center text-[10px] font-bold text-amber opacity-30" onclick="toggleChip(this)">γ</div>
+                <!-- Mode Selectors (Touchpad Style) -->
+                <div class="grid grid-cols-4 gap-2 w-full mt-4">
+                    <button onclick="checkTimerSafety(90, 'sprint')" id="mode-sprint" class="btn-mode py-3 text-center group">
+                        <div class="text-sm font-bold group-hover:text-cyan">90m</div>
+                        <div class="text-[8px] text-gray-500 uppercase" data-i18n="mode_deep">Deep</div>
+                    </button>
+                    <button onclick="checkTimerSafety(25, 'pomodoro')" id="mode-pomodoro" class="btn-mode py-3 text-center group">
+                        <div class="text-sm font-bold group-hover:text-cyan">25m</div>
+                        <div class="text-[8px] text-gray-500 uppercase" data-i18n="mode_skirmish">Rush</div>
+                    </button>
+                    <button onclick="checkTimerSafety(15, 'break')" id="mode-break" class="btn-mode py-3 text-center group">
+                        <div class="text-sm font-bold text-green-500 group-hover:text-white">15m</div>
+                        <div class="text-[8px] text-gray-500 uppercase" data-i18n="mode_reboot">Rest</div>
+                    </button>
+                    <button onclick="checkTimerSafety(5, 'short')" id="mode-short" class="btn-mode py-3 text-center group">
+                        <div class="text-sm font-bold text-green-500 group-hover:text-white">05m</div>
+                        <div class="text-[8px] text-gray-500 uppercase" data-i18n="mode_cool">Cool</div>
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- MODULE: TASKS -->
         <div class="flex flex-col gap-4 h-full">
-            <div class="hud-panel p-4 flex-1 flex flex-col">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 class="text-xl text-white" data-i18n="objectives_title">主要目标</h2>
-                        <p class="text-[10px] text-gray-500 font-mono mt-1" data-i18n="objectives_subtitle">协议: 单日上限 3 项任务</p>
-                    </div>
-                    <div class="text-right">
-                        <div id="taskProgress" class="text-3xl font-display text-gray-700">0/3</div>
-                    </div>
+            <div class="hud-panel p-4 flex-1 flex flex-col min-h-[400px]">
+                
+                <!-- Tab Switcher -->
+                <div class="flex items-center gap-6 mb-4 border-b border-gray-800 pb-1">
+                    <button onclick="switchTab('primary')" class="text-sm font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent transition-all opacity-40 hover:opacity-100" id="tab-primary" data-i18n="tab_main">主线任务</button>
+                    <button onclick="switchTab('side')" class="text-sm font-bold uppercase tracking-widest pb-1 border-b-2 border-transparent transition-all opacity-40 hover:opacity-100" id="tab-side" data-i18n="tab_side">突发行动</button>
+                    <div class="flex-1 text-right font-mono text-gray-600" id="taskProgress">0/3</div>
                 </div>
 
-                <div id="taskList" class="flex-1 flex flex-col gap-3">
+                <div id="taskList" class="flex-1 flex flex-col gap-3 overflow-y-auto cyber-scroll pr-1">
                     <!-- Tasks injected via JS -->
                 </div>
 
                 <!-- Archive Button -->
-                <button onclick="archiveDay()" class="mt-4 w-full py-3 border border-gray-700 text-gray-500 hover:text-cyan hover:border-cyan text-xs tracking-widest uppercase transition" data-i18n="archive_day_btn">
+                <button onclick="archiveDay()" class="mt-4 w-full py-3 border border-gray-800 bg-black/20 text-gray-500 hover:text-cyan hover:border-cyan text-xs tracking-[0.2em] uppercase transition" data-i18n="archive_day_btn">
                     >> 归档今日数据 <<
                 </button>
             </div>
@@ -263,154 +258,163 @@
 
     </main>
 
-    <!-- MODAL: FLOW CHECK -->
+    <!-- UNIFIED DIALOG MODAL -->
+    <div id="dialogModal" class="fixed inset-0 modal-overlay z-[100] hidden flex items-center justify-center p-6">
+        <div class="hud-panel w-full max-w-sm p-0 bg-dark modal-content border-l-4 border-l-cyan">
+            <div class="p-4 border-b border-gray-800">
+                <h3 id="dialogTitle" class="text-lg font-bold text-white uppercase tracking-wider">SYSTEM ALERT</h3>
+            </div>
+            <div class="p-5">
+                <div id="dialogBody" class="text-sm text-gray-300 font-mono mb-6 leading-relaxed"></div>
+                <div id="dialogExtra" class="mb-4 hidden"></div>
+
+                <div class="flex gap-3 justify-end">
+                    <button id="dialogCancel" class="px-4 py-2 border border-gray-700 text-gray-500 text-xs hover:text-white uppercase" onclick="closeDialog()">Cancel</button>
+                    <button id="dialogConfirm" class="px-4 py-2 bg-cyan/10 border border-cyan text-cyan text-xs font-bold uppercase hover:bg-cyan hover:text-black transition">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRE-FLIGHT CHECK MODAL -->
     <div id="flowCheckModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
-        <div class="hud-panel w-full max-w-md p-6 border-cyan transform transition-all scale-100 bg-black">
+        <div class="hud-panel w-full max-w-md p-6 border-cyan transform transition-all bg-dark modal-content">
             <h2 class="text-xl text-cyan mb-2 text-center" data-i18n="modal_dive_title">启动深潜模式</h2>
-            <p class="text-center text-gray-400 text-[10px] font-mono mb-6" data-i18n="modal_dive_subtitle">引擎启动前检查清单</p>
             
-            <div class="space-y-3 mb-6">
-                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-void/50 cursor-pointer group">
+            <div class="space-y-3 mb-6 mt-4">
+                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-void/50 cursor-pointer group hover:bg-white/5">
                     <input type="checkbox" class="cyber-check checklist-item">
                     <div class="flex-1">
-                        <div class="text-sm font-bold text-white group-active:text-cyan" data-i18n="check_target">目标锁定</div>
-                        <div class="text-[10px] text-gray-500" data-i18n="check_target_desc">单一明确的目标。</div>
+                        <div class="text-sm font-bold text-white" data-i18n="check_target">目标锁定</div>
                     </div>
                 </label>
-                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-void/50 cursor-pointer group">
+                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-void/50 cursor-pointer group hover:bg-white/5">
                     <input type="checkbox" class="cyber-check checklist-item">
                     <div class="flex-1">
-                        <div class="text-sm font-bold text-white group-active:text-cyan" data-i18n="check_silence">通讯静默</div>
-                        <div class="text-[10px] text-gray-500" data-i18n="check_silence_desc">手机勿扰，关闭通知。</div>
+                        <div class="text-sm font-bold text-white" data-i18n="check_silence">通讯静默</div>
                     </div>
                 </label>
-                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-void/50 cursor-pointer group">
+                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-void/50 cursor-pointer group hover:bg-white/5">
                     <input type="checkbox" class="cyber-check checklist-item">
                     <div class="flex-1">
-                        <div class="text-sm font-bold text-white group-active:text-cyan" data-i18n="check_bio">生理机能</div>
-                        <div class="text-[10px] text-gray-500" data-i18n="check_bio_desc">水，咖啡，洗手间。</div>
+                        <div class="text-sm font-bold text-white" data-i18n="check_bio">生理机能</div>
                     </div>
                 </label>
             </div>
 
             <div class="flex gap-3">
-                <button onclick="closeModal('flowCheckModal')" class="flex-1 py-3 border border-gray-700 text-gray-500 text-xs font-mono uppercase" data-i18n="btn_abort">放弃</button>
+                <button onclick="closeModal('flowCheckModal')" class="flex-1 py-3 border border-gray-700 text-gray-500 text-xs font-mono uppercase hover:text-white" data-i18n="btn_abort">放弃</button>
                 <button id="engageBtn" onclick="confirmStart()" class="flex-1 py-3 bg-cyan/10 border border-cyan text-cyan font-bold font-display uppercase tracking-widest opacity-50 cursor-not-allowed" disabled data-i18n="btn_engage">接入系统</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: HISTORY -->
-    <div id="historyModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
-        <div class="hud-panel w-full max-w-lg h-[80vh] flex flex-col p-0 bg-black">
-            <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
-                <h2 class="text-lg text-amber" data-i18n="history_title">数据档案馆</h2>
-                <button onclick="closeModal('historyModal')" class="text-gray-500 hover:text-white text-xl">×</button>
-            </div>
-            <div id="historyList" class="flex-1 overflow-y-auto p-4 space-y-4 text-sm font-mono">
-                <!-- History Items -->
-            </div>
-            <div class="p-3 border-t border-gray-800 text-center text-[10px] text-gray-600">
-                CYBER_FOCUS // MEMORY_BANK
-            </div>
+    <!-- ARCHIVE MODAL (HEATMAP + LIST) -->
+    <div id="historyModal" class="fixed inset-0 modal-overlay z-50 hidden flex flex-col bg-void overflow-hidden">
+        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-dark z-10">
+            <h2 class="text-lg text-amber tracking-widest font-display" data-i18n="history_title">DATA ARCHIVES</h2>
+            <button onclick="closeModal('historyModal')" class="text-gray-500 hover:text-white text-xl p-2">×</button>
         </div>
-    </div>
+        
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Heatmap Section -->
+            <div class="p-4 bg-dark/50 border-b border-gray-800 flex-shrink-0">
+                <div class="flex justify-between items-center mb-3 text-cyan font-mono">
+                    <button onclick="changeHeatmapMonth(-1)" class="px-2 hover:bg-cyan/20">&lt;</button>
+                    <span id="heatmapMonthLabel" class="font-bold">2023-10</span>
+                    <button onclick="changeHeatmapMonth(1)" class="px-2 hover:bg-cyan/20">&gt;</button>
+                </div>
+                <!-- Grid: 7 columns (Sun-Sat) -->
+                <div id="heatmapGrid" class="grid grid-cols-7 gap-1"></div>
+            </div>
 
-    <!-- GM TOOLS -->
-    <div class="gm-toggle" onclick="toggleGM()">GM</div>
-    <div class="gm-panel" id="gmPanel">
-        <div class="flex justify-between items-center text-amber mb-3 border-b border-gray-700 pb-2">
-            <span class="font-bold">GOD_MODE // DEBUG</span>
-            <button onclick="toggleGM()" class="text-gray-500">×</button>
-        </div>
-        <div class="grid grid-cols-2 gap-2 font-mono text-xs">
-            <button onclick="gmResetTasks()" class="border border-gray-600 p-3 hover:bg-gray-800 text-left text-gray-300">重置任务状态</button>
-            <button onclick="gmResetTimer()" class="border border-gray-600 p-3 hover:bg-gray-800 text-left text-gray-300">重置计时器</button>
-            <button onclick="gmFastForward()" class="border border-gray-600 p-3 hover:bg-gray-800 text-left text-gray-300">快进 1 分钟</button>
-            <button onclick="gmAddXp()" class="border border-gray-600 p-3 hover:bg-gray-800 text-left text-gray-300">给予 50 XP</button>
-            <button onclick="gmClearStorage()" class="col-span-2 border border-red-900 text-red-500 p-3 hover:bg-red-900/20 text-center font-bold">警告：清空所有缓存</button>
+            <!-- List Section -->
+            <div id="historyList" class="flex-1 overflow-y-auto p-4 space-y-3 cyber-scroll">
+                <!-- Items injected here -->
+            </div>
         </div>
     </div>
 
     <script>
-        // --- LOCALIZATION SYSTEM ---
+        // --- CONFIG & STATE ---
+        const CONFIG = {
+            sprint: { time: 90 * 60, color: '#00f3ff', labelKey: 'mode_deep' },
+            pomodoro: { time: 25 * 60, color: '#00f3ff', labelKey: 'mode_skirmish' },
+            break: { time: 15 * 60, color: '#0aff00', labelKey: 'mode_reboot' },
+            short: { time: 5 * 60, color: '#0aff00', labelKey: 'mode_cool' }
+        };
+
         const DICTIONARY = {
             zh: {
-                system_online: "系统在线",
-                history_btn: "档案馆",
-                module_timer: "计时核心",
-                status_idle: "待机中",
-                status_focus: "专注链接",
-                status_break: "系统冷却",
-                mode_deep: "深潜",
-                mode_skirmish: "突袭",
-                mode_reboot: "重启",
-                mode_cool: "冷却",
-                chips_label: "神经芯片",
-                objectives_title: "主要目标",
-                objectives_subtitle: "协议: 单日上限 3 项任务",
+                system_online: "系统在线", history_btn: "档案馆", module_timer: "计时核心",
+                status_focus: "专注链接", status_break: "系统冷却",
+                mode_deep: "深潜", mode_skirmish: "突袭", mode_reboot: "重启", mode_cool: "冷却",
                 archive_day_btn: ">> 归档今日数据 <<",
-                modal_dive_title: "启动深潜模式",
-                modal_dive_subtitle: "引擎启动前检查清单",
-                check_target: "目标锁定",
-                check_target_desc: "单一明确的目标。",
-                check_silence: "通讯静默",
-                check_silence_desc: "手机勿扰，关闭通知。",
-                check_bio: "生理机能",
-                check_bio_desc: "水，咖啡，洗手间。",
-                btn_abort: "放弃",
-                btn_engage: "接入系统",
-                history_title: "数据档案馆",
-                archive_confirm: "今日任务将归档并重置，确认执行？",
-                archive_empty: "无数据可归档",
-                task_ph: "> 输入任务指令...",
+                modal_dive_title: "启动深潜模式", 
+                check_target: "目标单一且明确", check_silence: "手机勿扰 / 通知关闭", check_bio: "生理机能调整完毕",
+                btn_abort: "放弃", btn_engage: "接入系统", history_title: "数据档案馆",
+                tab_main: "主线任务", tab_side: "突发行动",
+                task_ph: "> 输入任务指令...", side_ph: "> 2分钟内能搞定的事...",
+                dialog_reset_title: "中断警告", dialog_reset_msg: "切换模式或重置将丢失当前心流灯和进度。确认执行？",
+                dialog_archive_title: "归档确认", dialog_archive_msg: "确认归档今日所有任务数据并重置列表？",
+                dialog_debrief_title: "任务简报", dialog_debrief_msg: "提前终止。结算已完成任务：",
                 rank_1: "义体乞丐", rank_2: "街头混混", rank_3: "赛博浪人", rank_4: "网络行者", rank_5: "传奇佣兵", rank_6: "荒坂塔顶"
             },
             en: {
-                system_online: "SYSTEM ONLINE",
-                history_btn: "ARCHIVES",
-                module_timer: "TIMER CORE",
-                status_idle: "IDLE",
-                status_focus: "LINKED",
-                status_break: "COOLDOWN",
-                mode_deep: "DEEP",
-                mode_skirmish: "SKIRMISH",
-                mode_reboot: "REBOOT",
-                mode_cool: "COOL",
-                chips_label: "NEURAL CHIPS",
-                objectives_title: "PRIMARY OBJECTIVES",
-                objectives_subtitle: "PROTOCOL: 3 TASKS MAX / DAY",
-                archive_day_btn: ">> ARCHIVE DAY LOG <<",
-                modal_dive_title: "INITIATE DIVE",
-                modal_dive_subtitle: "PRE-FLIGHT CHECKLIST",
-                check_target: "TARGET LOCKED",
-                check_target_desc: "One clear goal defined.",
-                check_silence: "COMMS SILENCED",
-                check_silence_desc: "DND active, notifications off.",
-                check_bio: "BIO-METRICS",
-                check_bio_desc: "Hydrated, caffeinated.",
-                btn_abort: "ABORT",
-                btn_engage: "ENGAGE",
-                history_title: "DATA ARCHIVES",
-                archive_confirm: "Archive and reset today's tasks?",
-                archive_empty: "NO DATA TO ARCHIVE",
-                task_ph: "> INPUT DIRECTIVE...",
+                system_online: "ONLINE", history_btn: "ARCHIVE", module_timer: "TIMER CORE",
+                status_focus: "LINKED", status_break: "COOLDOWN",
+                mode_deep: "DEEP", mode_skirmish: "RUSH", mode_reboot: "REBOOT", mode_cool: "COOL",
+                archive_day_btn: ">> ARCHIVE LOG <<",
+                modal_dive_title: "INITIATE DIVE", 
+                check_target: "Target Locked", check_silence: "Comms Silenced", check_bio: "Bio-Metrics OK",
+                btn_abort: "ABORT", btn_engage: "ENGAGE", history_title: "DATA ARCHIVE",
+                tab_main: "PRIMARY", tab_side: "QUICK OPS",
+                task_ph: "> INPUT DIRECTIVE...", side_ph: "> QUICK TASK (< 2m)...",
+                dialog_reset_title: "INTERRUPT ALERT", dialog_reset_msg: "Switching/Resetting will lose current progress and flow lights. Confirm?",
+                dialog_archive_title: "ARCHIVE CONFIRM", dialog_archive_msg: "Archive today's log?",
+                dialog_debrief_title: "MISSION DEBRIEF", dialog_debrief_msg: "Early termination. Verify objectives:",
                 rank_1: "STREET RAT", rank_2: "GUTTER PUNK", rank_3: "EDGE RUNNER", rank_4: "NET RUNNER", rank_5: "LEGEND", rank_6: "ARASAKA TOP"
             }
         };
 
-        // --- AUDIO SYSTEM (Web Audio API) ---
+        let currentLang = localStorage.getItem('cyber_lang') || 'zh';
+        
+        const STATE = {
+            user: JSON.parse(localStorage.getItem('cyber_user')) || { xp: 0, level: 1 },
+            tasks: JSON.parse(localStorage.getItem('cyber_tasks')) || [
+                { id: 1, text: '', done: false }, { id: 2, text: '', done: false }, { id: 3, text: '', done: false }
+            ],
+            sideTasks: JSON.parse(localStorage.getItem('cyber_side_tasks')) || [], 
+            activeTab: 'primary',
+            history: JSON.parse(localStorage.getItem('cyber_history')) || [],
+            timer: JSON.parse(localStorage.getItem('cyber_timer_v34')) || {
+                active: false,
+                mode: 'sprint',
+                totalSeconds: 5400,
+                endTime: null,
+                pausedLeft: 5400,
+                flowLights: 0 // New: 0 to 5
+            }
+        };
+
+        // --- AUDIO SYSTEM (Retained for iPhone compatibility) ---
         const AudioSys = {
-            ctx: null,
-            init: function() {
-                if (!this.ctx) {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                } else if (this.ctx.state === 'suspended') {
-                    this.ctx.resume();
-                }
+            ctx: null, unlocked: false,
+            init: function() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            unlock: function() {
+                if (this.unlocked || !this.ctx) return;
+                const buffer = this.ctx.createBuffer(1, 1, 22050);
+                const source = this.ctx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(this.ctx.destination);
+                source.start(0);
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                this.unlocked = true;
+                document.removeEventListener('touchstart', unlockAudio);
+                document.removeEventListener('click', unlockAudio);
             },
             playTone: function(freq, type, duration, vol = 0.1, startTime = 0) {
-                if (!this.ctx) return;
+                if (!this.ctx) this.init();
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = type; 
@@ -424,481 +428,526 @@
                 osc.stop(t + duration);
             },
             sfx: {
-                click: () => AudioSys.playTone(800, 'square', 0.1, 0.05),
+                click: () => AudioSys.playTone(800, 'square', 0.05, 0.05),
+                light: () => AudioSys.playTone(1200, 'sine', 0.5, 0.1), // Flow light sound
                 start: () => {
-                    AudioSys.playTone(200, 'sawtooth', 0.5, 0.1);
-                    setTimeout(() => AudioSys.playTone(400, 'sawtooth', 0.5, 0.1), 100);
-                    setTimeout(() => AudioSys.playTone(800, 'sawtooth', 0.8, 0.1), 200);
+                    const t = AudioSys.ctx.currentTime;
+                    AudioSys.playTone(200, 'sawtooth', 0.5, 0.1, t);
+                    AudioSys.playTone(800, 'sawtooth', 0.8, 0.1, t+0.2);
                 },
                 alarm: () => {
-                    // Distinct alarm sound for timer end
                     const now = AudioSys.ctx.currentTime;
-                    // Pulse 1
                     AudioSys.playTone(880, 'square', 0.1, 0.2, now);
-                    AudioSys.playTone(880, 'square', 0.1, 0.2, now + 0.15);
                     AudioSys.playTone(880, 'square', 0.4, 0.2, now + 0.3);
-                    
-                    // Pulse 2 (delayed)
-                    AudioSys.playTone(880, 'square', 0.1, 0.2, now + 1.0);
-                    AudioSys.playTone(880, 'square', 0.1, 0.2, now + 1.15);
-                    AudioSys.playTone(880, 'square', 0.4, 0.2, now + 1.3);
-
-                    // Vibrate phone if supported
-                    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 500]);
                 },
-                xp: () => {
-                    AudioSys.playTone(1200, 'sine', 0.1, 0.05);
-                    setTimeout(() => AudioSys.playTone(1800, 'sine', 0.2, 0.05), 50);
-                },
-                levelUp: () => {
-                     const osc = AudioSys.ctx.createOscillator();
-                     const gain = AudioSys.ctx.createGain();
-                     osc.frequency.setValueAtTime(100, AudioSys.ctx.currentTime);
-                     osc.frequency.linearRampToValueAtTime(1000, AudioSys.ctx.currentTime + 1);
-                     gain.gain.setValueAtTime(0.2, AudioSys.ctx.currentTime);
-                     gain.gain.linearRampToValueAtTime(0, AudioSys.ctx.currentTime + 1);
-                     osc.connect(gain); gain.connect(AudioSys.ctx.destination);
-                     osc.start(); osc.stop(AudioSys.ctx.currentTime + 1);
-                }
+                xp: () => { AudioSys.playTone(1200, 'sine', 0.1, 0.05); setTimeout(() => AudioSys.playTone(1800, 'sine', 0.2, 0.05), 50); }
             }
         };
+        function unlockAudio() { AudioSys.init(); AudioSys.unlock(); }
 
-        function initAudioContext() { AudioSys.init(); }
+        // --- TIMER & FLOW LOGIC ---
+        let timerTicker = null;
+        let clockTicker = null;
 
-        // --- GAME SYSTEM (RPG) ---
-        const GAME = {
-            titles: ['rank_1', 'rank_2', 'rank_3', 'rank_4', 'rank_5', 'rank_6'],
-            calculateLevel: (xp) => Math.floor(Math.sqrt(xp / 100)) + 1,
-            nextLevelXp: (lvl) => 100 * Math.pow(lvl, 2),
-            addXp: (amount, eventType) => {
-                STATE.user.xp += amount;
-                const newLevel = GAME.calculateLevel(STATE.user.xp);
-                showFloatingText(`+${amount} XP`, eventType);
-                AudioSys.sfx.xp();
-                if(newLevel > STATE.user.level) {
-                    STATE.user.level = newLevel;
-                    setTimeout(() => {
-                        AudioSys.sfx.levelUp();
-                        alert(`>>> SYSTEM UPGRADE <<<\nLEVEL ${newLevel} REACHED`);
-                    }, 500);
-                }
-                saveSystem();
-                updateUserStats();
-            }
-        };
-
-        // --- CORE STATE ---
-        let currentLang = localStorage.getItem('cyber_lang') || 'zh';
-        
-        const STATE = {
-            user: JSON.parse(localStorage.getItem('cyber_user')) || { xp: 0, level: 1 },
-            tasks: JSON.parse(localStorage.getItem('cyber_tasks')) || [
-                { id: 1, text: '', done: false }, { id: 2, text: '', done: false }, { id: 3, text: '', done: false }
-            ],
-            history: JSON.parse(localStorage.getItem('cyber_history')) || [],
-            timer: {
-                totalSeconds: 5400,
-                remaining: 5400,
-                active: false,
-                mode: 'sprint',
-                interval: null
-            }
-        };
-
-        const UI = {
-            timerDisplay: document.getElementById('timerDisplay'),
-            ring: document.getElementById('progressRing'),
-            modeLabel: document.getElementById('modeLabel'),
-            taskList: document.getElementById('taskList'),
-            modal: document.getElementById('flowCheckModal'),
-            engageBtn: document.getElementById('engageBtn')
-        };
-
-        const CONFIG = {
-            sprint: { time: 90 * 60, color: '#00f3ff', labelKey: 'mode_deep' },
-            pomodoro: { time: 25 * 60, color: '#00f3ff', labelKey: 'mode_skirmish' },
-            break: { time: 15 * 60, color: '#0aff00', labelKey: 'mode_reboot' },
-            short: { time: 5 * 60, color: '#0aff00', labelKey: 'mode_cool' }
-        };
-
-        // --- FUNCTIONS ---
-
-        function t(key) { return DICTIONARY[currentLang][key] || key; }
-
-        function renderText() {
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                el.innerText = t(el.dataset.i18n);
-            });
-            document.querySelectorAll('input[placeholder]').forEach(el => {
-               if(el.id.includes('taskInput')) el.placeholder = t('task_ph');
-            });
-            document.getElementById('langBtn').innerText = currentLang === 'zh' ? 'EN' : '中';
-            updateUserStats();
-            updateTimerLabel();
+        function updateRealTime() {
+            const now = new Date();
+            const str = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('realTimeClock').innerText = str;
         }
 
-        function toggleLang() {
-            currentLang = currentLang === 'zh' ? 'en' : 'zh';
-            localStorage.setItem('cyber_lang', currentLang);
-            AudioSys.sfx.click();
-            renderText();
-        }
-
-        function init() {
-            // FIX: Sanitize tasks on init to prevent "stuck" inputs
-            // If a task has no text, it CANNOT be done.
-            STATE.tasks = STATE.tasks.map(task => ({
-                ...task,
-                done: task.text && task.text.trim() !== '' ? task.done : false
-            }));
-            saveSystem();
-
-            renderTasks();
-            updateTimerDisplay();
-            updateUserStats();
-            renderText();
+        function updateTimerUI(remaining) {
+            const m = Math.floor(remaining / 60);
+            const s = remaining % 60;
+            const displayStr = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            document.getElementById('timerDisplay').textContent = displayStr;
             
-            document.querySelectorAll('.checklist-item').forEach(cb => {
-                cb.addEventListener('change', () => {
-                    AudioSys.sfx.click();
-                    checkGatekeeper();
-                });
-            });
-        }
-
-        function saveSystem() {
-            localStorage.setItem('cyber_tasks', JSON.stringify(STATE.tasks));
-            localStorage.setItem('cyber_user', JSON.stringify(STATE.user));
-            localStorage.setItem('cyber_history', JSON.stringify(STATE.history));
-        }
-
-        // --- RPG UI ---
-        function updateUserStats() {
-            const lvl = GAME.calculateLevel(STATE.user.xp);
-            const nextXp = GAME.nextLevelXp(lvl);
-            const prevXp = GAME.nextLevelXp(lvl - 1);
-            const levelRange = nextXp - prevXp;
-            const currentProgress = STATE.user.xp - prevXp;
-            const percent = Math.min(100, Math.max(0, (currentProgress / levelRange) * 100));
-
-            document.getElementById('userLevel').innerText = lvl;
-            document.getElementById('currentXp').innerText = STATE.user.xp;
-            document.getElementById('nextLevelXp').innerText = nextXp;
-            document.getElementById('xpBar').style.width = `${percent}%`;
+            // Ring
+            const circumference = 552;
+            const offset = circumference - (remaining / STATE.timer.totalSeconds) * circumference;
+            const ring = document.getElementById('progressRing');
+            ring.style.strokeDashoffset = offset;
             
-            const titleIndex = Math.min(lvl - 1, GAME.titles.length - 1);
-            document.getElementById('userTitle').innerText = t(GAME.titles[titleIndex]);
-        }
+            // Config & Color
+            const cfg = CONFIG[STATE.timer.mode];
+            ring.style.stroke = cfg.color;
+            document.getElementById('modeLabel').style.color = cfg.color;
+            document.getElementById('modeLabel').textContent = STATE.timer.active ? t('status_focus') : t(cfg.labelKey);
 
-        function showFloatingText(text, sourceElement) {
-            const float = document.createElement('div');
-            float.className = 'xp-float';
-            float.innerText = text;
-            let x, y;
-            if(sourceElement) {
-                const rect = sourceElement.getBoundingClientRect();
-                x = rect.left + rect.width / 2;
-                y = rect.top;
+            // Flow Lights
+            const slots = document.querySelectorAll('.flow-slot');
+            slots.forEach((slot, i) => {
+                if (i < STATE.timer.flowLights) slot.classList.add('active');
+                else slot.classList.remove('active');
+            });
+
+            // Buttons Logic
+            const btnPlay = document.getElementById('iconPlay');
+            const btnPause = document.getElementById('iconPause');
+            if(STATE.timer.active) {
+                btnPlay.classList.add('hidden');
+                btnPause.classList.remove('hidden');
             } else {
-                x = window.innerWidth / 2;
-                y = window.innerHeight / 2;
+                btnPlay.classList.remove('hidden');
+                btnPause.classList.add('hidden');
             }
-            float.style.left = `${x}px`;
-            float.style.top = `${y}px`;
-            document.body.appendChild(float);
-            setTimeout(() => float.remove(), 1500);
+
+            // Mode Selector Active State
+            document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active', 'border-cyan'));
+            if(STATE.timer.mode) {
+                const activeBtn = document.getElementById(`mode-${STATE.timer.mode}`);
+                if(activeBtn) activeBtn.classList.add('active');
+            }
         }
 
-        // --- TIMER ENGINE ---
-        function updateTimerDisplay() {
-            const m = Math.floor(STATE.timer.remaining / 60);
-            const s = STATE.timer.remaining % 60;
-            UI.timerDisplay.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        function tick() {
+            if (!STATE.timer.active) return;
+            const now = Date.now();
+            const remaining = Math.max(0, Math.ceil((STATE.timer.endTime - now) / 1000));
             
-            const circumference = 628;
-            const offset = circumference - (STATE.timer.remaining / STATE.timer.totalSeconds) * circumference;
-            UI.ring.style.strokeDashoffset = offset;
+            // Flow Light Logic: Add light every 5 mins (300s) of elapsed time
+            const elapsed = STATE.timer.totalSeconds - remaining;
+            const lightsShouldBe = Math.min(5, Math.floor(elapsed / 300));
             
-            const currentConfig = CONFIG[STATE.timer.mode];
-            UI.ring.style.stroke = currentConfig.color;
-        }
+            if (lightsShouldBe > STATE.timer.flowLights) {
+                STATE.timer.flowLights = lightsShouldBe;
+                AudioSys.sfx.light();
+            }
 
-        function updateTimerLabel() {
-            const currentConfig = CONFIG[STATE.timer.mode];
-            UI.modeLabel.textContent = STATE.timer.active ? t('status_focus') : t(currentConfig.labelKey);
-            UI.modeLabel.style.color = currentConfig.color;
+            updateTimerUI(remaining);
+
+            if (remaining <= 0) completeTimer();
         }
 
         function toggleTimer() {
             AudioSys.sfx.click();
             if (STATE.timer.active) {
-                clearInterval(STATE.timer.interval);
+                // Pause -> Penalty: Lose 1 light
+                const now = Date.now();
+                const remaining = Math.max(0, Math.ceil((STATE.timer.endTime - now) / 1000));
                 STATE.timer.active = false;
-                document.getElementById('mainActionBtn').innerHTML = '▶';
-                updateTimerLabel();
+                STATE.timer.pausedLeft = remaining;
+                STATE.timer.endTime = null;
+                STATE.timer.flowLights = Math.max(0, STATE.timer.flowLights - 1); // Penalty
+                clearInterval(timerTicker);
+                updateTimerUI(STATE.timer.pausedLeft);
             } else {
-                if (STATE.timer.remaining <= 0) return;
-                startTicker();
+                // Resume
+                if (STATE.timer.pausedLeft <= 0) return;
+                STATE.timer.active = true;
+                STATE.timer.endTime = Date.now() + (STATE.timer.pausedLeft * 1000);
+                AudioSys.sfx.start();
+                tick(); 
+                timerTicker = setInterval(tick, 1000);
             }
-        }
-
-        function startTicker() {
-            STATE.timer.active = true;
-            document.getElementById('mainActionBtn').innerHTML = '❚❚';
-            updateTimerLabel();
-            AudioSys.sfx.start();
-            
-            STATE.timer.interval = setInterval(() => {
-                if (STATE.timer.remaining > 0) {
-                    STATE.timer.remaining--;
-                    updateTimerDisplay();
-                } else {
-                    completeTimer();
-                }
-            }, 1000);
-        }
-
-        function completeTimer() {
-            clearInterval(STATE.timer.interval);
-            STATE.timer.active = false;
-            document.getElementById('mainActionBtn').innerHTML = '▶';
-            
-            // Enhanced Alarm Sound
-            AudioSys.sfx.alarm();
-            
-            const minutes = STATE.timer.totalSeconds / 60;
-            const xpEarned = Math.floor(minutes * 2);
-            GAME.addXp(xpEarned, UI.timerDisplay);
-
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00f3ff', '#ff0055'] });
-            
-            updateTimerLabel();
-        }
-
-        function resetTimer() {
-            AudioSys.sfx.click();
-            clearInterval(STATE.timer.interval);
-            STATE.timer.active = false;
-            STATE.timer.remaining = STATE.timer.totalSeconds;
-            document.getElementById('mainActionBtn').innerHTML = '▶';
-            updateTimerDisplay();
-            updateTimerLabel();
+            saveSystem();
         }
 
         function setTimerDirect(min, mode) {
-            AudioSys.sfx.click();
-            clearInterval(STATE.timer.interval);
+            clearInterval(timerTicker);
             STATE.timer.active = false;
             STATE.timer.mode = mode;
             STATE.timer.totalSeconds = min * 60;
-            STATE.timer.remaining = min * 60;
-            document.getElementById('mainActionBtn').innerHTML = '▶';
-            updateTimerDisplay();
-            updateTimerLabel();
+            STATE.timer.pausedLeft = min * 60;
+            STATE.timer.endTime = null;
+            STATE.timer.flowLights = 0; // Reset lights on mode switch
+            updateTimerUI(STATE.timer.pausedLeft);
+            saveSystem();
         }
 
-        function preFlightCheck(min, mode) {
-            AudioSys.sfx.click();
-            UI.modal.classList.remove('hidden');
-            UI.modal.dataset.targetMin = min;
-            UI.modal.dataset.targetMode = mode;
-            document.querySelectorAll('.checklist-item').forEach(cb => cb.checked = false);
-            checkGatekeeper();
-        }
-
-        function closeModal(id) {
-            AudioSys.sfx.click();
-            document.getElementById(id).classList.add('hidden');
-        }
-
-        function checkGatekeeper() {
-            const allChecked = Array.from(document.querySelectorAll('.checklist-item')).every(cb => cb.checked);
-            if (allChecked) {
-                UI.engageBtn.disabled = false;
-                UI.engageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                UI.engageBtn.classList.add('active:bg-cyan', 'active:text-black');
+        function checkTimerSafety(min, mode) {
+            const isActiveOrPaused = STATE.timer.active || (STATE.timer.pausedLeft !== STATE.timer.totalSeconds && STATE.timer.pausedLeft > 0);
+            if(isActiveOrPaused) {
+                showDialog(t('dialog_reset_title'), t('dialog_reset_msg'), () => preFlightOrDirect(min, mode));
             } else {
-                UI.engageBtn.disabled = true;
-                UI.engageBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                preFlightOrDirect(min, mode);
+            }
+        }
+
+        function preFlightOrDirect(min, mode) {
+            AudioSys.sfx.click();
+            if(mode === 'sprint' || mode === 'pomodoro') {
+                document.getElementById('flowCheckModal').classList.remove('hidden');
+                document.getElementById('flowCheckModal').dataset.targetMin = min;
+                document.getElementById('flowCheckModal').dataset.targetMode = mode;
+                document.querySelectorAll('.checklist-item').forEach(cb => cb.checked = false);
+                checkGatekeeper();
+            } else {
+                setTimerDirect(min, mode);
             }
         }
 
         function confirmStart() {
-            const min = UI.modal.dataset.targetMin;
-            const mode = UI.modal.dataset.targetMode;
+            const min = document.getElementById('flowCheckModal').dataset.targetMin;
+            const mode = document.getElementById('flowCheckModal').dataset.targetMode;
             closeModal('flowCheckModal');
             setTimerDirect(min, mode);
-            startTicker();
+            toggleTimer();
+        }
+        
+        function checkGatekeeper() {
+            const allChecked = Array.from(document.querySelectorAll('.checklist-item')).every(cb => cb.checked);
+            const btn = document.getElementById('engageBtn');
+            btn.disabled = !allChecked;
+            if(allChecked) btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            else btn.classList.add('opacity-50', 'cursor-not-allowed');
         }
 
-        // --- TASK SYSTEM ---
-        function renderTasks() {
-            UI.taskList.innerHTML = '';
-            let completed = 0;
+        function triggerStop() {
+            AudioSys.sfx.click();
+            if(STATE.timer.pausedLeft <= 0 && !STATE.timer.active) {
+                setTimerDirect(CONFIG[STATE.timer.mode].time / 60, STATE.timer.mode);
+                return;
+            }
+            clearInterval(timerTicker);
+            STATE.timer.active = false;
             
-            STATE.tasks.forEach((task, index) => {
-                if(task.done) completed++;
-                
-                const div = document.createElement('div');
-                div.className = `flex items-center gap-3 p-3 border transition-all duration-300 ${task.done ? 'border-neon-green bg-neon-green/10' : 'border-gray-800 bg-void/40 active:border-cyan'}`;
-                
-                div.innerHTML = `
-                    <div class="font-mono text-xs opacity-50 w-4">0${index+1}</div>
-                    <input type="text" 
-                        id="taskInput_${index}"
-                        value="${task.text}" 
-                        class="flex-1 bg-transparent border-none outline-none text-white font-mono placeholder-gray-700 text-sm ${task.done ? 'line-through text-neon-green' : ''}"
-                        placeholder="${t('task_ph')}"
-                        onchange="updateTaskText(${index}, this.value)"
-                        ${task.done ? 'disabled' : ''}
-                    >
-                    <button onclick="toggleTask(${index}, this)" class="w-8 h-8 border flex items-center justify-center transition ${task.done ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-700 active:border-cyan active:text-cyan'}">
-                        ${task.done ? '✓' : '⚡'}
-                    </button>
-                `;
-                UI.taskList.appendChild(div);
-            });
-            
-            const progressEl = document.getElementById('taskProgress');
-            progressEl.textContent = `${completed}/3`;
-            progressEl.className = `text-3xl font-display ${completed === 3 ? 'text-neon-green glitch-text' : 'text-gray-700'}`;
-        }
+            // XP Calculation
+            let elapsed = 0;
+            if(STATE.timer.endTime) elapsed = STATE.timer.totalSeconds - Math.max(0, Math.ceil((STATE.timer.endTime - Date.now()) / 1000));
+            else elapsed = STATE.timer.totalSeconds - STATE.timer.pausedLeft;
 
-        function updateTaskText(index, val) {
-            STATE.tasks[index].text = val;
-            // Safety: if text cleared, untick
-            if(!val.trim()) STATE.tasks[index].done = false;
+            STATE.timer.pausedLeft = STATE.timer.totalSeconds; // Reset
+            STATE.timer.flowLights = 0;
+            STATE.timer.endTime = null;
+            updateTimerUI(STATE.timer.totalSeconds);
             saveSystem();
-            if(!val.trim()) renderTasks(); // Re-render to enable input if needed
+
+            if(elapsed > 60) showDebrief(Math.floor((elapsed / 60) * 0.5));
+        }
+
+        function completeTimer() {
+            clearInterval(timerTicker);
+            STATE.timer.active = false;
+            STATE.timer.endTime = null;
+            STATE.timer.pausedLeft = 0;
+            updateTimerUI(0);
+            saveSystem();
+            AudioSys.sfx.alarm();
+            
+            const baseXp = Math.floor(STATE.timer.totalSeconds / 60 * 2);
+            // Bonus for full flow lights?
+            const bonusXp = STATE.timer.flowLights * 10;
+            GAME.addXp(baseXp + bonusXp);
+
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00f3ff', '#ff0055'] });
+            setTimeout(() => showDebrief(0), 1000);
+        }
+
+        function showDebrief(extraXp) {
+             const listDiv = document.createElement('div');
+             listDiv.className = "flex flex-col gap-2 max-h-40 overflow-y-auto";
+            STATE.tasks.forEach((t, i) => {
+                if(t.text && !t.done) {
+                    const label = document.createElement('label');
+                    label.className = "flex items-center gap-2 text-xs text-white cursor-pointer hover:text-cyan border border-gray-800 p-2 bg-void";
+                    label.innerHTML = `<input type="checkbox" class="cyber-check debrief-check" value="${i}"> ${t.text}`;
+                    listDiv.appendChild(label);
+                }
+            });
+            if(listDiv.children.length === 0) listDiv.innerHTML = '<div class="text-gray-500 italic text-xs">No active tasks found.</div>';
+            
+            showDialog(t('dialog_debrief_title'), t('dialog_debrief_msg'), () => {
+                const checks = document.querySelectorAll('.debrief-check');
+                checks.forEach(cb => {
+                    if(cb.checked) { STATE.tasks[cb.value].done = true; GAME.addXp(50); }
+                });
+                if(extraXp > 0) GAME.addXp(extraXp);
+                saveSystem();
+                renderTasks();
+                setTimerDirect(CONFIG[STATE.timer.mode].time / 60, STATE.timer.mode);
+            }, true, listDiv);
+        }
+
+        // --- TASKS ---
+        function switchTab(tab) {
+            AudioSys.sfx.click();
+            STATE.activeTab = tab;
+            document.querySelectorAll('#tab-primary, #tab-side').forEach(b => {
+                b.classList.remove('border-cyan', 'opacity-100');
+                b.classList.add('border-transparent', 'opacity-40');
+            });
+            document.getElementById(`tab-${tab}`).classList.remove('border-transparent', 'opacity-40');
+            document.getElementById(`tab-${tab}`).classList.add('border-cyan', 'opacity-100');
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('taskList');
+            container.innerHTML = '';
+            
+            if (STATE.activeTab === 'primary') {
+                let completed = 0;
+                STATE.tasks.forEach((task, index) => {
+                    if(task.done) completed++;
+                    const div = document.createElement('div');
+                    div.className = `flex items-center gap-3 p-3 border transition-all duration-300 ${task.done ? 'border-neon-green bg-neon-green/10' : 'border-gray-800 bg-void/40'}`;
+                    div.innerHTML = `
+                        <div class="font-mono text-xs opacity-50 w-4">0${index+1}</div>
+                        <input type="text" value="${task.text}" class="flex-1 bg-transparent border-none outline-none text-white font-mono placeholder-gray-700 text-sm ${task.done ? 'line-through text-neon-green' : ''}" placeholder="${t('task_ph')}" onchange="STATE.tasks[${index}].text=this.value;saveSystem();" ${task.done ? 'disabled' : ''}>
+                        <button onclick="toggleTask(${index}, this)" class="w-8 h-8 border flex items-center justify-center transition ${task.done ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-700 active:border-cyan active:text-cyan'}">${task.done ? '✓' : '⚡'}</button>`;
+                    container.appendChild(div);
+                });
+                document.getElementById('taskProgress').textContent = `${completed}/3`;
+            } else {
+                document.getElementById('taskProgress').innerHTML = '∞';
+                const inputDiv = document.createElement('div');
+                inputDiv.className = 'border border-gray-700 p-2 flex gap-2 mb-2 bg-black';
+                inputDiv.innerHTML = `<input type="text" id="newSideTask" class="flex-1 bg-transparent border-none outline-none text-white text-xs font-mono" placeholder="${t('side_ph')}"><button onclick="addSideTask()" class="text-cyan font-bold text-lg px-2">+</button>`;
+                container.appendChild(inputDiv);
+                STATE.sideTasks.forEach((txt, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-2 border border-gray-800 bg-void/30';
+                    div.innerHTML = `<span class="text-xs text-gray-300">${txt}</span><button onclick="completeSideTask(${idx}, this)" class="text-gray-600 hover:text-cyan text-xs font-bold">[ DONE ]</button>`;
+                    container.appendChild(div);
+                });
+            }
         }
 
         function toggleTask(index, btnEl) {
             AudioSys.sfx.click();
-            // Allow unticking even if disabled input, but don't allow ticking empty tasks
             if(!STATE.tasks[index].done && !STATE.tasks[index].text.trim()) return;
-
             STATE.tasks[index].done = !STATE.tasks[index].done;
-            
-            if(STATE.tasks[index].done) {
-                AudioSys.playTone(600, 'sine', 0.1); // Small confirm
-                GAME.addXp(50, btnEl);
-            }
-
+            if(STATE.tasks[index].done) { AudioSys.sfx.xp(); GAME.addXp(50, btnEl); }
             saveSystem();
             renderTasks();
-            updateUserStats();
         }
 
-        function toggleChip(el) {
+        function addSideTask() {
+            const val = document.getElementById('newSideTask').value.trim();
+            if(val) { STATE.sideTasks.unshift(val); saveSystem(); renderTasks(); AudioSys.sfx.click(); }
+        }
+
+        function completeSideTask(idx, btnEl) {
             AudioSys.sfx.click();
-            if(el.style.opacity === '0.3' || el.style.opacity === '') {
-                el.style.opacity = '1';
-                el.style.transform = 'scale(1.1)';
-                el.style.boxShadow = '0 0 10px #ffaa00';
-            } else {
-                el.style.opacity = '0.3';
-                el.style.transform = 'scale(1)';
-                el.style.boxShadow = 'none';
-            }
+            GAME.addXp(15, btnEl);
+            STATE.sideTasks.splice(idx, 1);
+            saveSystem();
+            renderTasks();
         }
 
-        // --- HISTORY ARCHIVE ---
         function archiveDay() {
             AudioSys.sfx.click();
-            const hasContent = STATE.tasks.some(t => t.text.trim().length > 0);
-            if(!hasContent) {
-                alert(t('archive_empty'));
-                return;
-            }
-
-            if(confirm(t('archive_confirm'))) {
-                const now = new Date();
-                const record = {
-                    date: now.toISOString(),
+            if(!STATE.tasks.some(t => t.text) && !STATE.sideTasks.length) return;
+            showDialog(t('dialog_archive_title'), t('dialog_archive_msg'), () => {
+                STATE.history.unshift({
+                    date: new Date().toISOString(),
                     tasks: JSON.parse(JSON.stringify(STATE.tasks)),
-                    completedCount: STATE.tasks.filter(t => t.done).length
-                };
-
-                STATE.history.unshift(record);
+                    sideTasks: [...STATE.sideTasks],
+                    completedCount: STATE.tasks.filter(t=>t.done).length + STATE.sideTasks.length
+                });
                 STATE.tasks.forEach(t => { t.text = ''; t.done = false; });
+                STATE.sideTasks = [];
                 saveSystem();
                 renderTasks();
-                AudioSys.sfx.xp();
-            }
+            });
         }
 
+        // --- HEATMAP ARCHIVE ---
+        let viewDate = new Date();
+        
         function openHistory() {
             AudioSys.sfx.click();
-            const list = document.getElementById('historyList');
-            list.innerHTML = '';
-            
-            if(STATE.history.length === 0) {
-                list.innerHTML = `<div class="text-center text-gray-600 mt-10">NO DATA FOUND</div>`;
-            } else {
-                STATE.history.forEach(rec => {
-                    const dateObj = new Date(rec.date);
-                    const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    
-                    const div = document.createElement('div');
-                    div.className = 'border border-gray-800 p-3 bg-white/5 mb-2';
-                    
-                    let taskHtml = '';
-                    rec.tasks.forEach(t => {
-                        if(t.text) {
-                            taskHtml += `<div class="flex gap-2 items-center text-xs text-gray-400">
-                                <span class="${t.done ? 'text-neon-green' : 'text-red-500'}">${t.done ? '✓' : '×'}</span>
-                                <span class="${t.done ? 'line-through' : ''}">${t.text}</span>
-                            </div>`;
-                        }
-                    });
-
-                    div.innerHTML = `
-                        <div class="flex justify-between items-center mb-2 border-b border-gray-700 pb-1">
-                            <span class="text-neon-cyan">${dateStr}</span>
-                            <span class="text-xs ${rec.completedCount === 3 ? 'text-neon-green' : 'text-gray-500'}">SCORE: ${rec.completedCount}/3</span>
-                        </div>
-                        <div class="space-y-1">${taskHtml}</div>
-                    `;
-                    list.appendChild(div);
-                });
-            }
+            renderHeatmap();
+            renderHistoryList(); // Show all initially or focused date
             document.getElementById('historyModal').classList.remove('hidden');
         }
 
-        // --- GM TOOLS ---
-        function toggleGM() {
-            document.getElementById('gmPanel').classList.toggle('open');
+        function changeHeatmapMonth(delta) {
+            AudioSys.sfx.click();
+            viewDate.setMonth(viewDate.getMonth() + delta);
+            renderHeatmap();
         }
-        function gmResetTasks() {
-            STATE.tasks.forEach(t => { t.done = false; t.text = ''; });
-            saveSystem();
-            renderTasks();
-            alert('SYSTEM: TASKS RESET');
-        }
-        function gmResetTimer() {
-            resetTimer();
-        }
-        function gmFastForward() {
-            if(STATE.timer.remaining > 60) {
-                STATE.timer.remaining -= 60;
-                updateTimerDisplay();
+
+        function renderHeatmap() {
+            const y = viewDate.getFullYear();
+            const m = viewDate.getMonth();
+            document.getElementById('heatmapMonthLabel').textContent = `${y}-${String(m+1).padStart(2,'0')}`;
+            
+            const firstDay = new Date(y, m, 1).getDay(); // 0=Sun
+            const daysInMonth = new Date(y, m + 1, 0).getDate();
+            const grid = document.getElementById('heatmapGrid');
+            grid.innerHTML = '';
+
+            // Empty slots for padding
+            for(let i=0; i<firstDay; i++) {
+                grid.appendChild(document.createElement('div'));
             }
-        }
-        function gmAddXp() {
-            GAME.addXp(50);
-        }
-        function gmClearStorage() {
-            if(confirm('WIPE ALL DATA?')) {
-                localStorage.removeItem('cyber_tasks');
-                localStorage.removeItem('cyber_maint');
-                localStorage.removeItem('cyber_user');
-                localStorage.removeItem('cyber_history');
-                location.reload();
+
+            // Days
+            for(let d=1; d<=daysInMonth; d++) {
+                const checkDateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                // Find stats for this day
+                const dayRecords = STATE.history.filter(h => h.date.startsWith(checkDateStr));
+                const totalCompleted = dayRecords.reduce((acc, r) => acc + r.completedCount, 0);
+
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell rounded-sm cursor-pointer hover:border-white';
+                if(totalCompleted > 0) cell.classList.add('l1');
+                if(totalCompleted > 3) cell.classList.add('l2');
+                if(totalCompleted > 6) cell.classList.add('l3');
+                
+                cell.onclick = () => filterHistoryList(checkDateStr);
+                grid.appendChild(cell);
             }
         }
 
-        // Boot
-        init();
+        function filterHistoryList(dateStr) {
+            AudioSys.sfx.click();
+            const filtered = STATE.history.filter(h => h.date.startsWith(dateStr));
+            renderHistoryList(filtered, dateStr);
+        }
+
+        function renderHistoryList(data = STATE.history, dateLabel = null) {
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            
+            if(dateLabel) {
+                const header = document.createElement('div');
+                header.className = "text-xs text-cyan mb-2 font-bold";
+                header.innerText = `FILTER: ${dateLabel}`;
+                list.appendChild(header);
+            }
+
+            if(!data || data.length === 0) {
+                list.innerHTML += `<div class="text-center text-gray-600 mt-4">NO DATA</div>`;
+                return;
+            }
+
+            data.forEach(rec => {
+                const d = new Date(rec.date);
+                const card = document.createElement('div');
+                card.className = "border border-gray-800 bg-white/5 p-3";
+                
+                let html = `<div class="flex justify-between items-start mb-2">
+                    <span class="text-xs text-amber">${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                    <span class="text-xs text-gray-500 font-mono">PTS:${rec.completedCount}</span>
+                </div>`;
+                
+                // Main
+                rec.tasks.forEach(t => {
+                    if(t.text) html += `<div class="text-xs ${t.done?'text-gray-300':'text-gray-600'} flex gap-2"><span class="${t.done?'text-green-500':'text-red-500'}">${t.done?'✓':'×'}</span> ${t.text}</div>`;
+                });
+                // Side
+                if(rec.sideTasks && rec.sideTasks.length) {
+                    html += `<div class="mt-2 pt-1 border-t border-gray-700 text-[10px] text-cyan">QUICK OPS</div>`;
+                    rec.sideTasks.forEach(s => html += `<div class="text-xs text-gray-500 pl-2">› ${s}</div>`);
+                }
+                card.innerHTML = html;
+                list.appendChild(card);
+            });
+        }
+
+        // --- RPG & SYSTEM ---
+        const GAME = {
+            titles: ['rank_1', 'rank_2', 'rank_3', 'rank_4', 'rank_5', 'rank_6'],
+            calculateLevel: (xp) => Math.floor(Math.sqrt(xp / 100)) + 1,
+            nextLevelXp: (lvl) => 100 * Math.pow(lvl, 2),
+            addXp: (amount, el) => {
+                STATE.user.xp += amount;
+                if(el) showFloatingText(`+${amount} XP`, el);
+                saveSystem();
+                updateUserStats();
+            }
+        };
+
+        function updateUserStats() {
+            const lvl = GAME.calculateLevel(STATE.user.xp);
+            const nextXp = GAME.nextLevelXp(lvl);
+            const prevXp = GAME.nextLevelXp(lvl - 1);
+            const percent = Math.min(100, Math.max(0, ((STATE.user.xp - prevXp) / (nextXp - prevXp)) * 100));
+            document.getElementById('userLevel').innerText = lvl;
+            document.getElementById('currentXp').innerText = STATE.user.xp;
+            document.getElementById('nextLevelXp').innerText = nextXp;
+            document.getElementById('xpBar').style.width = `${percent}%`;
+            document.getElementById('userTitle').innerText = t(GAME.titles[Math.min(lvl - 1, GAME.titles.length - 1)]);
+        }
+
+        function toggleGM() {
+            const secret = prompt("ROOT ACCESS KEY:", "");
+            if(secret === "cyber") {
+                const action = prompt("1. Add 500 XP\n2. Reset Timer\n3. Clear Data");
+                if(action === '1') GAME.addXp(500);
+                if(action === '2') triggerStop();
+                if(action === '3') { localStorage.clear(); location.reload(); }
+            }
+        }
+
+        function showFloatingText(text, sourceElement) {
+            const float = document.createElement('div');
+            float.innerText = text;
+            float.className = 'fixed text-amber font-bold pointer-events-none z-[999] text-lg animate-[floatUp_1s_ease-out_forwards]';
+            const rect = sourceElement.getBoundingClientRect();
+            float.style.left = `${rect.left + rect.width/2}px`;
+            float.style.top = `${rect.top}px`;
+            document.body.appendChild(float);
+            setTimeout(() => float.remove(), 1000);
+        }
+
+        // Helper
+        function t(k) { return DICTIONARY[currentLang][k] || k; }
+        function saveSystem() { 
+            localStorage.setItem('cyber_user', JSON.stringify(STATE.user));
+            localStorage.setItem('cyber_tasks', JSON.stringify(STATE.tasks));
+            localStorage.setItem('cyber_side_tasks', JSON.stringify(STATE.sideTasks));
+            localStorage.setItem('cyber_history', JSON.stringify(STATE.history));
+            localStorage.setItem('cyber_lang', currentLang);
+            localStorage.setItem('cyber_timer_v34', JSON.stringify(STATE.timer));
+        }
+        function toggleLang() { currentLang = currentLang==='zh'?'en':'zh'; document.getElementById('langBtn').innerText=currentLang==='zh'?'EN':'中'; saveSystem(); renderText(); }
+        function renderText() {
+            document.querySelectorAll('[data-i18n]').forEach(el => el.innerText = t(el.dataset.i18n));
+            updateUserStats();
+        }
+        function showDialog(t,b,cb,c=true,e=null) {
+            AudioSys.sfx.click();
+            document.getElementById('dialogTitle').innerText = t; document.getElementById('dialogBody').innerText = b;
+            const cbBtn = document.getElementById('dialogConfirm');
+            const newCb = cbBtn.cloneNode(true); cbBtn.parentNode.replaceChild(newCb, cbBtn);
+            newCb.onclick = ()=>{closeDialog();if(cb)cb()};
+            document.getElementById('dialogCancel').style.display=c?'block':'none';
+            const exDiv = document.getElementById('dialogExtra'); exDiv.innerHTML='';
+            if(e){exDiv.classList.remove('hidden');exDiv.appendChild(e);}else exDiv.classList.add('hidden');
+            document.getElementById('dialogModal').classList.remove('hidden');
+        }
+        function closeDialog(){document.getElementById('dialogModal').classList.add('hidden');}
+        function closeModal(id){AudioSys.sfx.click();document.getElementById(id).classList.add('hidden');}
+
+        // --- INIT ---
+        (function init(){
+            document.addEventListener('touchstart', unlockAudio, {once:true});
+            document.addEventListener('click', unlockAudio, {once:true});
+            
+            // Resume Timer Logic
+            if (STATE.timer.active && STATE.timer.endTime) {
+                const now = Date.now();
+                if (now >= STATE.timer.endTime) {
+                    STATE.timer.active = false;
+                    STATE.timer.pausedLeft = 0;
+                    completeTimer(); 
+                } else {
+                    timerTicker = setInterval(tick, 1000);
+                    tick();
+                }
+            } else {
+                updateTimerUI(STATE.timer.pausedLeft);
+            }
+
+            // Clocks
+            updateRealTime();
+            setInterval(updateRealTime, 1000);
+
+            renderTasks();
+            updateUserStats();
+            renderText();
+            
+            document.querySelectorAll('.checklist-item').forEach(cb => cb.addEventListener('change', checkGatekeeper));
+            document.addEventListener('keypress', (e)=>{if(e.key==='Enter'&&document.activeElement.id==='newSideTask')addSideTask()});
+            
+            // Inject Keyframe styles
+            const style = document.createElement('style');
+            style.innerHTML = `@keyframes floatUp { 0% { opacity:1; transform: translateY(0); } 100% { opacity:0; transform: translateY(-30px); } }`;
+            document.head.appendChild(style);
+        })();
     </script>
 </body>
 </html>
