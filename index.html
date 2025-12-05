@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>CYBER FOCUS // HUD v3.7</title>
+    <title>CYBER FOCUS // HUD v3.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -15,13 +15,13 @@
             theme: {
                 extend: {
                     colors: {
-                        void: '#050505',
+                        void: 'var(--bg-void)', // Dynamic var
                         cyan: '#00f3ff',
                         pink: '#ff0055',
                         green: '#0aff00',
                         amber: '#ffaa00',
                         dark: '#0a0f14',
-                        panel: 'rgba(15, 23, 42, 0.9)',
+                        panel: 'var(--bg-panel)', // Dynamic var
                     },
                     fontFamily: {
                         display: ['Orbitron', 'sans-serif'],
@@ -44,16 +44,31 @@
 
     <style>
         :root {
+            /* DEFAULT DARK MODE */
             --bg-void: #050505;
+            --bg-panel: rgba(15, 23, 42, 0.9);
             --neon-cyan: #00f3ff;
             --neon-pink: #ff0055;
             --neon-green: #0aff00;
             --neon-amber: #ffaa00;
             --panel-border: rgba(0, 243, 255, 0.2);
+            --text-muted: #6b7280; /* gray-500 */
+            --text-base: #fff;
+            --scanline-opacity: 0.3;
+        }
+
+        /* HIGH VISIBILITY MODE */
+        body.high-vis {
+            --bg-void: #111827; /* Slate 900 - Lighter black */
+            --bg-panel: rgba(30, 41, 59, 0.98); /* Slate 800 - More opaque */
+            --panel-border: rgba(0, 243, 255, 0.5); /* Stronger border */
+            --text-muted: #9ca3af; /* gray-400 - Lighter gray */
+            --text-base: #fff;
+            --scanline-opacity: 0.1; /* Less noise */
         }
 
         body {
-            background-color: #020406;
+            background-color: var(--bg-void);
             background-image: 
                 linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
@@ -66,24 +81,34 @@
             -webkit-tap-highlight-color: transparent;
             padding-bottom: env(safe-area-inset-bottom);
             user-select: none;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Adjust text colors for High Vis via CSS Var injection */
+        body.high-vis .text-gray-500, 
+        body.high-vis .text-gray-600,
+        body.high-vis .text-gray-400 {
+            color: var(--text-muted);
         }
 
         /* CRT Scanlines */
         .scanlines {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
-            background-size: 100% 4px; pointer-events: none; z-index: 9999; opacity: 0.3;
+            background-size: 100% 4px; pointer-events: none; z-index: 9999; 
+            opacity: var(--scanline-opacity);
         }
 
         /* UI Components */
         .hud-panel {
-            background: var(--panel);
+            background: var(--bg-panel);
             border: 1px solid var(--panel-border);
             backdrop-filter: blur(8px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             position: relative;
             background-image: radial-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px);
             background-size: 10px 10px;
+            transition: background 0.3s, border-color 0.3s;
         }
 
         .hud-panel::before, .hud-panel::after, .hud-corner-bl, .hud-corner-tr {
@@ -190,7 +215,7 @@
         .gm-toggle-btn:active { transform: scale(0.9); }
     </style>
 </head>
-<body class="p-3 md:p-6 max-w-5xl mx-auto flex flex-col gap-4 safe-pb text-sm relative">
+<body class="p-3 md:p-6 max-w-5xl mx-auto flex flex-col gap-4 safe-pb text-sm relative transition-colors duration-300">
 
     <div class="scanlines"></div>
 
@@ -204,11 +229,14 @@
                         <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_#0aff00]"></span>
                         <span data-i18n="system_online">ONLINE</span>
                     </div>
-                    <div class="text-[10px] text-cyan opacity-70">HUD v3.7</div>
+                    <div class="text-[10px] text-cyan opacity-70">HUD v3.8</div>
                 </div>
             </div>
             
             <div class="flex gap-2">
+                <button onclick="toggleVis()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-white hover:text-white transition bg-dark/50" title="Brightness Mode">
+                    ☀
+                </button>
                 <button onclick="toggleLang()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-cyan transition bg-dark/50" id="langBtn">EN</button>
                 <button onclick="openHistory()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-amber hover:text-amber transition flex items-center gap-1 bg-dark/50">
                     <span data-i18n="history_btn">档案</span>
@@ -218,7 +246,10 @@
 
         <!-- RPG Stats -->
         <div class="flex items-center gap-3 text-xs font-mono">
-            <div class="text-amber font-bold drop-shadow-[0_0_5px_rgba(255,170,0,0.5)]">LVL <span id="userLevel" class="text-base">1</span></div>
+            <div class="text-amber font-bold drop-shadow-[0_0_5px_rgba(255,170,0,0.5)] flex flex-col leading-tight cursor-pointer hover:text-white transition" onclick="renameUser()" title="Rename Operator">
+                <span>LVL <span id="userLevel">1</span></span>
+                <span id="userName" class="text-[10px] opacity-80 tracking-wider uppercase">OPERATIVE</span>
+            </div>
             <div class="flex-1 flex flex-col gap-1">
                 <div class="flex justify-between text-[10px] text-gray-400">
                     <span id="userTitle" class="text-cyan">义体乞丐</span>
@@ -398,6 +429,7 @@
                 dialog_reset_title: "中断警告", dialog_reset_msg: "切换模式或重置将丢失当前心流灯和进度。确认执行？",
                 dialog_archive_title: "归档确认", dialog_archive_msg: "确认归档今日所有任务数据并重置列表？",
                 dialog_debrief_title: "任务简报", dialog_debrief_msg: "提前终止。结算已完成任务：",
+                dialog_rename_title: "身份重置", dialog_rename_msg: "输入新的特工代号：",
                 rank_1: "义体乞丐", rank_2: "街头混混", rank_3: "赛博浪人", rank_4: "网络行者", rank_5: "传奇佣兵", rank_6: "荒坂塔顶"
             },
             en: {
@@ -416,6 +448,7 @@
                 dialog_reset_title: "INTERRUPT ALERT", dialog_reset_msg: "Switching/Resetting will lose current progress and flow lights. Confirm?",
                 dialog_archive_title: "ARCHIVE CONFIRM", dialog_archive_msg: "Archive today's log?",
                 dialog_debrief_title: "MISSION DEBRIEF", dialog_debrief_msg: "Early termination. Verify objectives:",
+                dialog_rename_title: "IDENTITY OVERRIDE", dialog_rename_msg: "Enter new Agent Callsign:",
                 rank_1: "STREET RAT", rank_2: "GUTTER PUNK", rank_3: "EDGE RUNNER", rank_4: "NET RUNNER", rank_5: "LEGEND", rank_6: "ARASAKA TOP"
             }
         };
@@ -423,17 +456,22 @@
         let currentLang = localStorage.getItem('cyber_lang') || 'zh';
         
         const STATE = {
-            user: JSON.parse(localStorage.getItem('cyber_user')) || { xp: 0, level: 1 },
+            user: JSON.parse(localStorage.getItem('cyber_user')) || { xp: 0, level: 1, name: 'OPERATIVE' },
             tasks: JSON.parse(localStorage.getItem('cyber_tasks')) || [
                 { id: 1, text: '', done: false }, { id: 2, text: '', done: false }, { id: 3, text: '', done: false }
             ],
             sideTasks: JSON.parse(localStorage.getItem('cyber_side_tasks')) || [], 
+            sideTasksLog: JSON.parse(localStorage.getItem('cyber_side_log')) || [], // Graveyard for completed active tasks today
             activeTab: 'primary',
             history: JSON.parse(localStorage.getItem('cyber_history')) || [],
             timer: JSON.parse(localStorage.getItem('cyber_timer_v36')) || {
                 active: false, mode: 'sprint', totalSeconds: 5400, endTime: null, pausedLeft: 5400, flowLights: 0
-            }
+            },
+            config: JSON.parse(localStorage.getItem('cyber_config')) || { highVis: false }
         };
+
+        // Apply high vis on load
+        if(STATE.config.highVis) document.body.classList.add('high-vis');
 
         // --- AUDIO SYSTEM ---
         const AudioSys = {
@@ -502,7 +540,6 @@
                 },
                 xp: () => { AudioSys.playTone(1200, 'sine', 0.1, 0.05); setTimeout(() => AudioSys.playTone(1800, 'sine', 0.2, 0.05), 50); },
                 check: () => AudioSys.playTone(1200, 'sine', 0.1, 0.1),
-                // New Thud Sound
                 thud: () => {
                     if (!AudioSys.ctx) AudioSys.init();
                     if (AudioSys.ctx.state === 'suspended') AudioSys.ctx.resume();
@@ -580,7 +617,6 @@
             const now = Date.now();
             const remaining = Math.max(0, Math.ceil((STATE.timer.endTime - now) / 1000));
             
-            // Per Second XP (Silent)
             GAME.addXp(1, null); 
 
             const elapsed = STATE.timer.totalSeconds - remaining;
@@ -589,7 +625,6 @@
             if (lightsShouldBe > STATE.timer.flowLights) {
                 STATE.timer.flowLights = lightsShouldBe;
                 AudioSys.sfx.light();
-                // Bonus XP logic
                 const bonus = lightsShouldBe * 20; 
                 GAME.addXp(bonus, document.getElementById('flowLightsContainer'));
             }
@@ -600,7 +635,7 @@
 
         function toggleTimer() {
             if (STATE.timer.active) {
-                triggerStop(); // Pause treats as stop/reset in this logic as per request "time reset behavior"
+                triggerStop();
             } else {
                 if (STATE.timer.pausedLeft <= 0) return;
                 STATE.timer.active = true;
@@ -627,7 +662,7 @@
         function checkTimerSafety(min, mode) {
             const isActiveOrPaused = STATE.timer.active || (STATE.timer.pausedLeft !== STATE.timer.totalSeconds && STATE.timer.pausedLeft > 0);
             if(isActiveOrPaused) {
-                 AudioSys.sfx.thud(); // Warning sound
+                 AudioSys.sfx.thud();
                  showDialog(t('dialog_reset_title'), t('dialog_reset_msg'), () => preFlightOrDirect(min, mode));
             }
             else preFlightOrDirect(min, mode);
@@ -662,7 +697,7 @@
         }
 
         function triggerStop() {
-            AudioSys.sfx.thud(); // Thud sound
+            AudioSys.sfx.thud();
             if(STATE.timer.pausedLeft <= 0 && !STATE.timer.active) {
                 setTimerDirect(CONFIG[STATE.timer.mode].time / 60, STATE.timer.mode);
                 return;
@@ -688,7 +723,6 @@
             AudioSys.sfx.alarm();
             
             const baseXp = Math.floor(STATE.timer.totalSeconds / 60 * 2);
-            // Extra bonus for keeping flow lights till end
             const bonusXp = STATE.timer.flowLights * 30; 
             GAME.addXp(baseXp + bonusXp, document.getElementById('timerDisplay'));
 
@@ -797,6 +831,8 @@
         function completeSideTask(idx, btnEl) {
             AudioSys.sfx.click();
             GAME.addXp(15, btnEl);
+            // Push to log before removing
+            STATE.sideTasksLog.push(STATE.sideTasks[idx]);
             STATE.sideTasks.splice(idx, 1);
             saveSystem();
             renderTasks();
@@ -804,16 +840,20 @@
 
         function archiveDay() {
             AudioSys.sfx.click();
-            if(!STATE.tasks.some(t => t.text) && !STATE.sideTasks.length) return;
+            const hasContent = STATE.tasks.some(t => t.text) || STATE.sideTasks.length || STATE.sideTasksLog.length;
+            if(!hasContent) return;
+            
             showDialog(t('dialog_archive_title'), t('dialog_archive_msg'), () => {
+                const fullSideTasks = [...STATE.sideTasks, ...STATE.sideTasksLog];
                 STATE.history.unshift({
                     date: new Date().toISOString(),
                     tasks: JSON.parse(JSON.stringify(STATE.tasks)),
-                    sideTasks: [...STATE.sideTasks],
-                    completedCount: STATE.tasks.filter(t=>t.done).length + STATE.sideTasks.length
+                    sideTasks: fullSideTasks,
+                    completedCount: STATE.tasks.filter(t=>t.done).length + fullSideTasks.length
                 });
                 STATE.tasks.forEach(t => { t.text = ''; t.done = false; });
                 STATE.sideTasks = [];
+                STATE.sideTasksLog = []; // Clear log
                 saveSystem();
                 renderTasks();
             });
@@ -887,6 +927,28 @@
             document.getElementById('nextLevelXp').innerText = nextXp;
             document.getElementById('xpBar').style.width = `${percent}%`;
             document.getElementById('userTitle').innerText = t(GAME.titles[Math.min(lvl - 1, GAME.titles.length - 1)]);
+            document.getElementById('userName').innerText = STATE.user.name || 'OPERATIVE';
+        }
+
+        function renameUser() {
+            AudioSys.sfx.click();
+            const inputDiv = document.createElement('div');
+            inputDiv.innerHTML = `<input type="text" id="newNameInput" class="w-full bg-black/50 border border-cyan p-2 text-white font-mono uppercase" value="${STATE.user.name || 'OPERATIVE'}" maxlength="12">`;
+            
+            showDialog(t('dialog_rename_title'), t('dialog_rename_msg'), () => {
+                const name = document.getElementById('newNameInput').value.trim() || 'OPERATIVE';
+                STATE.user.name = name;
+                saveSystem();
+                updateUserStats();
+            }, true, inputDiv);
+        }
+
+        function toggleVis() {
+            AudioSys.sfx.click();
+            STATE.config.highVis = !STATE.config.highVis;
+            if(STATE.config.highVis) document.body.classList.add('high-vis');
+            else document.body.classList.remove('high-vis');
+            localStorage.setItem('cyber_config', JSON.stringify(STATE.config));
         }
 
         // --- GM TOOLS ---
@@ -922,6 +984,7 @@
             localStorage.setItem('cyber_user', JSON.stringify(STATE.user));
             localStorage.setItem('cyber_tasks', JSON.stringify(STATE.tasks));
             localStorage.setItem('cyber_side_tasks', JSON.stringify(STATE.sideTasks));
+            localStorage.setItem('cyber_side_log', JSON.stringify(STATE.sideTasksLog)); // Save log
             localStorage.setItem('cyber_history', JSON.stringify(STATE.history));
             localStorage.setItem('cyber_lang', currentLang);
             localStorage.setItem('cyber_timer_v36', JSON.stringify(STATE.timer));
