@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CYBER FOCUS // HUD v3.2</title>
+    <title>CYBER FOCUS // HUD v3.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <script>
@@ -18,12 +18,24 @@
                         pink: '#ff0055',
                         green: '#0aff00',
                         amber: '#ffaa00',
-                        dark: '#0a0f14'
+                        dark: '#0a0f14',
+                        panel: 'rgba(15, 23, 42, 0.9)', // 新的面板背景色
+                        glass: 'rgba(15, 23, 42, 0.6)'
                     },
                     fontFamily: {
                         display: ['Orbitron', 'sans-serif'],
                         mono: ['Share Tech Mono', 'monospace'],
                         sc: ['Noto Sans SC', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scan': 'scanline 8s linear infinite',
+                    },
+                    keyframes: {
+                        scanline: {
+                            '0%': { transform: 'translateY(0)' },
+                            '100%': { transform: 'translateY(100vh)' },
+                        }
                     }
                 }
             }
@@ -37,15 +49,16 @@
             --neon-pink: #ff0055;
             --neon-green: #0aff00;
             --neon-amber: #ffaa00;
-            --hud-bg: rgba(10, 15, 20, 0.95);
+            --panel-border: rgba(0, 243, 255, 0.2);
         }
 
         body {
-            background-color: var(--bg-void);
+            background-color: #020406;
+            /* 稍微提亮一点背景纹理 */
             background-image: 
                 linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
-            background-size: 20px 20px;
+            background-size: 40px 40px;
             color: var(--neon-cyan);
             font-family: 'Share Tech Mono', 'Noto Sans SC', monospace;
             min-height: 100vh;
@@ -54,199 +67,335 @@
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* 移动端触摸优化 */
-        button, input, .chip { touch-action: manipulation; }
-
-        /* HUD Panels */
-        .hud-panel {
-            background: var(--hud-bg);
-            border: 1px solid rgba(0, 243, 255, 0.15);
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            position: relative;
-            /* Tech Corners */
-            clip-path: polygon(
-                0 0, 
-                100% 0, 
-                100% calc(100% - 15px), 
-                calc(100% - 15px) 100%, 
-                0 100%
+        /* CRT Scanlines Overlay */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
             );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.3;
         }
 
-        /* Typography & Effects */
+        /* UI Components - Enhanced Panel */
+        .hud-panel {
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            /* 内部网格纹理 */
+            background-image: 
+                radial-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 10px 10px;
+        }
+
+        /* Tech Corners Decoration */
+        .hud-panel::before, .hud-panel::after, 
+        .hud-corner-bl, .hud-corner-tr {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-color: var(--neon-cyan);
+            border-style: solid;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        /* Top Left */
+        .hud-panel::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        /* Bottom Right */
+        .hud-panel::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+        /* Bottom Left (using span inside) */
+        .hud-corner-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+        /* Top Right (using span inside) */
+        .hud-corner-tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+        
+        /* Ruler Markings Decoration */
+        .deco-ruler {
+            position: absolute;
+            right: -1px;
+            top: 20px;
+            bottom: 20px;
+            width: 4px;
+            background-image: linear-gradient(to bottom, var(--neon-cyan) 1px, transparent 1px);
+            background-size: 100% 10px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
         .glitch-text { text-shadow: 2px 0 rgba(255,0,0,0.5), -2px 0 rgba(0,255,255,0.5); }
         
-        /* XP Bar */
-        .xp-container { height: 4px; background: #111; border: 1px solid #333; position: relative; overflow: hidden; }
-        .xp-fill { height: 100%; background: var(--neon-amber); width: 0%; box-shadow: 0 0 10px var(--neon-amber); transition: width 0.5s ease-out; }
-
-        /* Inputs & Buttons */
-        .cyber-input {
-            background: rgba(0,0,0,0.6); border: 1px solid #333; color: var(--neon-cyan);
-            font-family: inherit; transition: 0.3s; border-radius: 0; appearance: none;
-        }
-        .cyber-input:focus { outline: none; border-color: var(--neon-cyan); }
-        
-        .btn-cyber {
-            background: rgba(0, 243, 255, 0.05); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);
-            text-transform: uppercase; font-family: 'Orbitron', sans-serif; transition: all 0.2s;
-            position: relative; overflow: hidden; letter-spacing: 1px;
+        /* Buttons */
+        .btn-control {
+            width: 56px; height: 56px;
             display: flex; align-items: center; justify-content: center;
+            clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+            transition: all 0.2s;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid currentColor;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
-        .btn-cyber:active { background: var(--neon-cyan); color: #000; }
+        .btn-control:active { transform: scale(0.92); box-shadow: 0 0 0 transparent; }
         
-        .btn-green { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10, 255, 0, 0.05); }
-        .btn-green:active { background: var(--neon-green); color: #000; }
-
-        .btn-alert { border-color: var(--neon-pink); color: var(--neon-pink); background: rgba(255, 0, 85, 0.05); }
-        .btn-alert:active { background: var(--neon-pink); color: #fff; }
-
-        /* Timer Ring */
-        .ring-bg { stroke: rgba(255,255,255,0.05); }
-        .ring-progress { transition: stroke-dashoffset 1s linear, stroke 0.3s; filter: drop-shadow(0 0 4px currentColor); }
-
-        /* Modals */
-        .modal-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); transition: opacity 0.2s; }
-        .modal-content { 
-            animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
+        .btn-mode {
+            background: rgba(0, 243, 255, 0.03);
+            border: 1px solid rgba(0, 243, 255, 0.15);
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
         }
-        @keyframes modalIn { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+        .btn-mode:hover { background: rgba(0, 243, 255, 0.08); }
+        .btn-mode.active {
+            background: rgba(0, 243, 255, 0.15);
+            border-color: var(--neon-cyan);
+            box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+        .btn-mode.active .mode-title { color: var(--neon-cyan); text-shadow: 0 0 8px var(--neon-cyan); }
 
+        /* Flow Lights */
+        .flow-slot {
+            width: 12px; height: 6px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            transform: skewX(-20deg);
+            transition: all 0.5s;
+        }
+        .flow-slot.active {
+            background: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+            border-color: #fff;
+        }
+
+        /* Heatmap & Tabs */
+        .tab-selector {
+            position: relative;
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            transition: all 0.2s;
+        }
+        .tab-selector.active {
+            background: rgba(0, 243, 255, 0.15);
+            color: #fff;
+            border-color: var(--neon-cyan);
+            text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+        }
+        
         /* Checkboxes */
         .cyber-check {
-            appearance: none; width: 20px; height: 20px; border: 1px solid var(--neon-cyan);
-            background: transparent; display: grid; place-content: center; margin-right: 10px;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--neon-cyan);
+            background: rgba(0,0,0,0.5);
+            display: grid;
+            place-content: center;
+            cursor: pointer;
+            position: relative;
         }
         .cyber-check::before {
-            content: ""; width: 10px; height: 10px; transform: scale(0);
-            background: var(--neon-cyan); transition: 100ms transform ease-in-out;
+            content: "";
+            width: 10px;
+            height: 10px;
+            transform: scale(0);
+            background: var(--neon-cyan);
+            transition: 120ms transform ease-in-out;
+            box-shadow: 0 0 8px var(--neon-cyan);
         }
         .cyber-check:checked::before { transform: scale(1); }
+        
+        /* Modals */
+        .modal-overlay { background: rgba(5, 5, 10, 0.9); backdrop-filter: blur(5px); }
+        .cyber-scroll::-webkit-scrollbar { width: 4px; }
+        .cyber-scroll::-webkit-scrollbar-thumb { background: var(--neon-cyan); }
+        .cyber-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
 
-        /* Tabs */
-        .tab-btn { opacity: 0.4; border-bottom: 2px solid transparent; transition: all 0.3s; }
-        .tab-btn.active { opacity: 1; border-color: var(--neon-cyan); color: var(--neon-cyan); text-shadow: 0 0 8px rgba(0, 243, 255, 0.5); }
-
-        /* Floating XP */
-        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
-        .xp-float { position: absolute; color: var(--neon-amber); font-weight: bold; pointer-events: none; animation: floatUp 1.5s forwards; z-index: 999; text-shadow: 0 0 5px black; font-size: 1.2rem; }
-
-        /* GM Panel */
-        .gm-panel {
-            position: fixed; bottom: 0; right: 0; width: 100%; max-width: 320px;
-            background: #0a0a0a; border-top: 2px solid var(--neon-amber);
-            transform: translateY(110%); transition: transform 0.3s;
-            z-index: 10000; padding: 20px;
+        /* Helper for description text lines */
+        .desc-line {
+            display: block;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,243,255,0.3), transparent);
+            margin: 8px 0;
         }
-        .gm-panel.open { transform: translateY(0); }
     </style>
 </head>
-<body class="p-3 md:p-6 max-w-5xl mx-auto flex flex-col gap-4 safe-pb" onclick="AudioSys.safeInit()">
+<body class="p-3 md:p-6 max-w-5xl mx-auto flex flex-col gap-4 safe-pb text-sm relative">
+
+    <!-- Global Scanlines -->
+    <div class="scanlines"></div>
 
     <!-- Header -->
-    <header class="flex flex-col gap-3 border-b border-gray-800 pb-3">
+    <header class="flex flex-col gap-3 border-b border-gray-800 pb-3 relative z-10">
         <div class="flex justify-between items-start">
-            <div>
-                <div class="text-[10px] text-gray-500 mb-0 tracking-[0.2em] flex items-center gap-2">
-                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span data-i18n="system_online">系统在线</span>
+            <div class="flex items-center gap-3">
+                <div id="realTimeClock" class="text-3xl font-display font-bold text-white tracking-widest drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">00:00</div>
+                <div class="flex flex-col">
+                    <div class="text-[10px] text-gray-500 tracking-[0.2em] flex items-center gap-2">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_#0aff00]"></span>
+                        <span data-i18n="system_online">ONLINE</span>
+                    </div>
+                    <div class="text-[10px] text-cyan opacity-70">HUD v3.5</div>
                 </div>
-                <h1 class="text-2xl md:text-3xl font-bold glitch-text">FOCUS_OS <span class="text-xs opacity-50 bg-cyan-900/30 px-1 rounded">v3.2</span></h1>
             </div>
+            
             <div class="flex gap-2">
-                <button onclick="toggleLang()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-cyan transition" id="langBtn">EN</button>
-                <button onclick="openHistory()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-amber hover:text-amber transition" data-i18n="history_btn">档案</button>
+                <button onclick="toggleLang()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-cyan transition bg-dark/50" id="langBtn">EN</button>
+                <button onclick="openHistory()" class="border border-gray-700 px-2 py-1 text-[10px] hover:border-amber hover:text-amber transition flex items-center gap-1 bg-dark/50">
+                    <span data-i18n="history_btn">档案</span>
+                </button>
             </div>
         </div>
 
         <!-- RPG Stats -->
         <div class="flex items-center gap-3 text-xs font-mono">
-            <div class="text-amber">LVL <span id="userLevel" class="text-base font-bold">1</span></div>
+            <div class="text-amber font-bold drop-shadow-[0_0_5px_rgba(255,170,0,0.5)]">LVL <span id="userLevel" class="text-base">1</span></div>
             <div class="flex-1 flex flex-col gap-1">
                 <div class="flex justify-between text-[10px] text-gray-400">
                     <span id="userTitle" class="text-cyan">义体乞丐</span>
                     <span><span id="currentXp">0</span> / <span id="nextLevelXp">100</span> XP</span>
                 </div>
-                <div class="xp-container">
-                    <div id="xpBar" class="xp-fill"></div>
+                <div class="h-1 bg-gray-900 border border-gray-800 relative overflow-hidden">
+                    <div id="xpBar" class="h-full bg-amber shadow-[0_0_10px_orange] transition-all duration-500 w-0"></div>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <main class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
         
-        <!-- MODULE: TIMER -->
+        <!-- MODULE: TIMER & CONTROL DECK -->
         <div class="flex flex-col gap-4">
-            <div class="hud-panel p-4 relative overflow-hidden">
-                <div class="absolute top-2 right-2 text-[10px] text-gray-600 border border-gray-800 px-1" data-i18n="module_timer">计时核心</div>
+            <div class="hud-panel p-5 relative flex flex-col items-center">
+                <!-- Tech Decoration -->
+                <div class="hud-corner-bl"></div>
+                <div class="hud-corner-tr"></div>
+                <div class="deco-ruler"></div>
                 
-                <!-- Timer Ring -->
-                <div class="relative w-56 h-56 mx-auto flex items-center justify-center my-4">
-                    <svg class="w-full h-full transform -rotate-90">
-                        <circle class="ring-bg" cx="112" cy="112" r="100" stroke-width="4" fill="none"></circle>
-                        <circle id="progressRing" class="ring-progress" cx="112" cy="112" r="100" stroke-width="6" fill="none" stroke="var(--neon-cyan)" stroke-dasharray="628" stroke-dashoffset="0"></circle>
-                    </svg>
+                <div class="absolute top-2 left-3 text-[10px] text-gray-500 border-l-2 border-cyan pl-2 font-mono tracking-widest" data-i18n="module_timer">计时核心 // TIMER CORE</div>
+                
+                <!-- Center Stage: Buttons + Ring -->
+                <div class="flex items-center justify-center w-full gap-2 mt-6 mb-2">
                     
-                    <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
-                        <div id="modeLabel" class="text-[10px] tracking-[0.2em] text-gray-400 mb-1" data-i18n="status_idle">待机</div>
-                        <div id="timerDisplay" class="text-5xl font-mono font-bold tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">00:00</div>
-                        
-                        <div class="flex gap-4 mt-4">
-                            <!-- Play/Pause -->
-                            <button id="mainActionBtn" onclick="toggleTimer()" class="w-14 h-14 bg-black border border-neon-cyan text-neon-cyan active:bg-neon-cyan active:text-black flex items-center justify-center transition shadow-[0_0_15px_rgba(0,243,255,0.2)] text-2xl clip-corner">
-                                ▶
-                            </button>
-                            <!-- Stop / Early Finish -->
-                            <button onclick="triggerStop()" class="w-14 h-14 bg-black border border-neon-pink text-neon-pink active:bg-neon-pink active:text-black flex items-center justify-center transition text-xl clip-corner">
-                                ■
-                            </button>
+                    <!-- Left: Stop Button -->
+                    <button onclick="triggerStop()" class="btn-control text-pink-500 hover:bg-pink-500/20 hover:text-white group hover:border-pink-500">
+                        <svg class="w-6 h-6 fill-current drop-shadow-[0_0_5px_rgba(255,0,85,0.8)]" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+                    </button>
+
+                    <!-- Center: Ring -->
+                    <div class="relative w-48 h-48 flex-shrink-0">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle cx="96" cy="96" r="88" stroke-width="2" stroke="rgba(255,255,255,0.05)" fill="none"></circle>
+                            <circle id="progressRing" cx="96" cy="96" r="88" stroke-width="4" fill="none" stroke="var(--neon-cyan)" stroke-dasharray="552" stroke-dashoffset="0" class="transition-all duration-300 drop-shadow-[0_0_8px_rgba(0,243,255,0.3)]"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
+                            <div id="modeLabel" class="text-[10px] tracking-[0.2em] text-gray-400 mb-1 font-bold">READY</div>
+                            <div id="timerDisplay" class="text-4xl font-mono font-bold tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">00:00</div>
+                            
+                            <!-- Flow Lights (New) -->
+                            <div class="flex gap-1 mt-3" id="flowLightsContainer">
+                                <div class="flow-slot"></div>
+                                <div class="flow-slot"></div>
+                                <div class="flow-slot"></div>
+                                <div class="flow-slot"></div>
+                                <div class="flow-slot"></div>
+                            </div>
+                            <!-- Description for Flow Lights -->
+                            <div class="text-[9px] text-cyan/60 mt-1 tracking-wider scale-90 origin-top font-mono">
+                                专注心流灯：+1/5分钟（+XP)
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Right: Play/Pause Button -->
+                    <button id="mainActionBtn" onclick="toggleTimer()" class="btn-control text-cyan hover:bg-cyan/20 hover:text-white group hover:border-cyan">
+                        <!-- Play -->
+                        <svg id="iconPlay" class="w-8 h-8 fill-current ml-1 drop-shadow-[0_0_5px_rgba(0,243,255,0.8)]" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <!-- Pause -->
+                        <svg id="iconPause" class="w-8 h-8 fill-current hidden drop-shadow-[0_0_5px_rgba(0,243,255,0.8)]" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
                 </div>
 
-                <!-- Controls -->
-                <div class="grid grid-cols-4 gap-2">
-                    <button onclick="checkTimerSafety(90, 'sprint')" class="timer-preset btn-cyber py-2 text-xs font-bold leading-tight" data-mode="sprint">90m<br><span class="text-[8px] opacity-70" data-i18n="mode_deep">深潜</span></button>
-                    <button onclick="checkTimerSafety(25, 'pomodoro')" class="timer-preset btn-cyber py-2 text-xs font-bold leading-tight" data-mode="pomodoro">25m<br><span class="text-[8px] opacity-70" data-i18n="mode_skirmish">突袭</span></button>
-                    <!-- Green/Amber for breaks, not red -->
-                    <button onclick="checkTimerSafety(15, 'break')" class="timer-preset btn-green py-2 text-xs font-bold leading-tight" data-mode="break">15m<br><span class="text-[8px] opacity-70" data-i18n="mode_reboot">重启</span></button>
-                    <button onclick="checkTimerSafety(5, 'short')" class="timer-preset btn-green py-2 text-xs font-bold leading-tight" data-mode="short">05m<br><span class="text-[8px] opacity-70" data-i18n="mode_cool">冷却</span></button>
-                </div>
-            </div>
+                <!-- Divider -->
+                <div class="desc-line"></div>
 
-            <!-- Chips -->
-            <div class="hud-panel p-3 flex justify-between items-center">
-                <span class="text-[10px] text-amber tracking-widest" data-i18n="chips_label">神经芯片</span>
-                <div class="flex gap-3">
-                    <div class="chip w-10 h-10 border border-amber bg-amber/10 active:bg-amber active:text-black transition-all cursor-pointer flex items-center justify-center text-[10px] font-bold text-amber opacity-30" onclick="toggleChip(this)">α</div>
-                    <div class="chip w-10 h-10 border border-amber bg-amber/10 active:bg-amber active:text-black transition-all cursor-pointer flex items-center justify-center text-[10px] font-bold text-amber opacity-30" onclick="toggleChip(this)">β</div>
-                    <div class="chip w-10 h-10 border border-amber bg-amber/10 active:bg-amber active:text-black transition-all cursor-pointer flex items-center justify-center text-[10px] font-bold text-amber opacity-30" onclick="toggleChip(this)">γ</div>
+                <!-- Mode Selectors (Touchpad Style) with Tooltips -->
+                <div class="grid grid-cols-2 gap-3 w-full mt-2">
+                    <!-- Deep Work -->
+                    <button onclick="checkTimerSafety(90, 'sprint')" id="mode-sprint" class="btn-mode py-2 px-3 text-left group flex flex-col">
+                        <div class="flex justify-between items-baseline w-full">
+                            <div class="text-lg font-bold text-white mode-title">90m</div>
+                            <div class="text-[9px] text-gray-500 font-mono">DEEP</div>
+                        </div>
+                        <div class="text-[10px] text-gray-400 group-hover:text-cyan/80 mt-1" data-i18n="desc_90">深度心流 // 攻克核心难题</div>
+                    </button>
+
+                    <!-- Rush -->
+                    <button onclick="checkTimerSafety(25, 'pomodoro')" id="mode-pomodoro" class="btn-mode py-2 px-3 text-left group flex flex-col">
+                        <div class="flex justify-between items-baseline w-full">
+                            <div class="text-lg font-bold text-white mode-title">25m</div>
+                            <div class="text-[9px] text-gray-500 font-mono">RUSH</div>
+                        </div>
+                        <div class="text-[10px] text-gray-400 group-hover:text-cyan/80 mt-1" data-i18n="desc_25">高频突击 // 快速清理杂务</div>
+                    </button>
+
+                    <!-- Rest -->
+                    <button onclick="checkTimerSafety(15, 'break')" id="mode-break" class="btn-mode py-2 px-3 text-left group flex flex-col border-gray-800">
+                        <div class="flex justify-between items-baseline w-full">
+                            <div class="text-lg font-bold text-green-500 mode-title">15m</div>
+                            <div class="text-[9px] text-gray-600 font-mono">REST</div>
+                        </div>
+                        <div class="text-[10px] text-gray-500 group-hover:text-green-400 mt-1" data-i18n="desc_15">系统维护 // 远离屏幕休息</div>
+                    </button>
+
+                    <!-- Cool -->
+                    <button onclick="checkTimerSafety(5, 'short')" id="mode-short" class="btn-mode py-2 px-3 text-left group flex flex-col border-gray-800">
+                        <div class="flex justify-between items-baseline w-full">
+                            <div class="text-lg font-bold text-green-500 mode-title">05m</div>
+                            <div class="text-[9px] text-gray-600 font-mono">COOL</div>
+                        </div>
+                        <div class="text-[10px] text-gray-500 group-hover:text-green-400 mt-1" data-i18n="desc_05">生理冷却 // 短暂调整呼吸</div>
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- MODULE: TASKS -->
         <div class="flex flex-col gap-4 h-full">
-            <div class="hud-panel p-4 flex-1 flex flex-col min-h-[400px]">
-                
+            <div class="hud-panel p-5 flex-1 flex flex-col min-h-[450px] relative">
+                 <!-- Tech Decoration -->
+                 <div class="hud-corner-bl"></div>
+                 <div class="hud-corner-tr"></div>
+                 <div class="deco-ruler" style="left: -1px; right: auto;"></div>
+
                 <!-- Tab Switcher -->
-                <div class="flex items-center gap-6 mb-4 border-b border-gray-800 pb-1">
-                    <button onclick="switchTab('primary')" class="tab-btn text-sm font-bold uppercase tracking-widest active" id="tab-primary" data-i18n="tab_main">主线任务</button>
-                    <button onclick="switchTab('side')" class="tab-btn text-sm font-bold uppercase tracking-widest" id="tab-side" data-i18n="tab_side">突发行动</button>
-                    <div class="flex-1 text-right text-3xl font-display text-gray-700" id="taskProgress">0/3</div>
+                <div class="flex items-center gap-3 mb-4 border-b border-gray-800 pb-2">
+                    <button onclick="switchTab('primary')" class="tab-selector px-3 py-1 text-sm font-bold uppercase tracking-widest transition-all opacity-40 hover:opacity-100" id="tab-primary" data-i18n="tab_main">主线任务</button>
+                    <button onclick="switchTab('side')" class="tab-selector px-3 py-1 text-sm font-bold uppercase tracking-widest transition-all opacity-40 hover:opacity-100" id="tab-side" data-i18n="tab_side">突发行动</button>
+                    <div class="flex-1 text-right font-mono text-gray-500" id="taskProgress">0/3</div>
                 </div>
 
-                <!-- Task Description -->
-                <p id="taskDesc" class="text-[10px] text-gray-500 font-mono mb-2" data-i18n="objectives_subtitle">协议: 单日上限 3 项任务</p>
+                <!-- Task Guidelines (Dynamic) -->
+                <div id="taskGuide" class="text-[10px] text-amber/90 border border-amber/30 bg-amber/5 p-2 mb-3 text-center tracking-wide font-mono">
+                    <span class="animate-pulse">⚠️</span> <span data-i18n="guide_main">战术准则：【今日仅锁定 3 个高价值任务目标】</span>
+                </div>
 
-                <div id="taskList" class="flex-1 flex flex-col gap-3 overflow-y-auto">
+                <div id="taskList" class="flex-1 flex flex-col gap-3 overflow-y-auto cyber-scroll pr-1">
                     <!-- Tasks injected via JS -->
                 </div>
 
                 <!-- Archive Button -->
-                <button onclick="archiveDay()" class="mt-4 w-full py-3 border border-gray-700 text-gray-500 hover:text-cyan hover:border-cyan text-xs tracking-widest uppercase transition" data-i18n="archive_day_btn">
+                <button onclick="archiveDay()" class="mt-4 w-full py-3 border border-gray-700 bg-black/30 text-gray-500 hover:text-cyan hover:border-cyan hover:bg-cyan/5 text-xs tracking-[0.2em] uppercase transition font-mono" data-i18n="archive_day_btn">
                     >> 归档今日数据 <<
                 </button>
             </div>
@@ -254,161 +403,173 @@
 
     </main>
 
-    <!-- UNIFIED DIALOG MODAL (Replaces Alert/Confirm) -->
+    <!-- UNIFIED DIALOG MODAL -->
     <div id="dialogModal" class="fixed inset-0 modal-overlay z-[100] hidden flex items-center justify-center p-6">
-        <div class="hud-panel w-full max-w-sm p-0 bg-dark modal-content border-l-4 border-l-cyan">
-            <div class="p-4 border-b border-gray-800">
-                <h3 id="dialogTitle" class="text-lg font-bold text-white uppercase tracking-wider">SYSTEM ALERT</h3>
+        <div class="hud-panel w-full max-w-sm p-0 bg-dark modal-content border-l-4 border-l-cyan shadow-[0_0_30px_rgba(0,243,255,0.1)]">
+            <div class="p-4 border-b border-gray-800 bg-cyan/5">
+                <h3 id="dialogTitle" class="text-lg font-bold text-white uppercase tracking-wider font-display">SYSTEM ALERT</h3>
             </div>
-            <div class="p-5">
-                <div id="dialogBody" class="text-sm text-gray-300 font-mono mb-6 leading-relaxed">
-                    Message goes here...
-                </div>
-                <!-- Dynamic Content for Debrief -->
+            <div class="p-5 bg-dark/90">
+                <div id="dialogBody" class="text-sm text-gray-300 font-mono mb-6 leading-relaxed"></div>
                 <div id="dialogExtra" class="mb-4 hidden"></div>
 
                 <div class="flex gap-3 justify-end">
-                    <button id="dialogCancel" class="px-4 py-2 border border-gray-700 text-gray-500 text-xs hover:text-white uppercase" onclick="closeDialog()">Cancel</button>
-                    <button id="dialogConfirm" class="px-4 py-2 bg-cyan/10 border border-cyan text-cyan text-xs font-bold uppercase hover:bg-cyan hover:text-black transition">Confirm</button>
+                    <button id="dialogCancel" class="px-4 py-2 border border-gray-700 text-gray-500 text-xs hover:text-white uppercase hover:border-white transition" onclick="closeDialog()">Cancel</button>
+                    <button id="dialogConfirm" class="px-4 py-2 bg-cyan/10 border border-cyan text-cyan text-xs font-bold uppercase hover:bg-cyan hover:text-black transition shadow-[0_0_10px_rgba(0,243,255,0.2)]">Confirm</button>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- LEVEL UP MODAL -->
-    <div id="levelUpModal" class="fixed inset-0 modal-overlay z-[200] hidden flex items-center justify-center p-6">
-        <div class="hud-panel w-full max-w-sm p-8 bg-black border-2 border-amber text-center modal-content shadow-[0_0_50px_rgba(255,170,0,0.2)]">
-            <div class="text-amber text-xs tracking-[0.5em] mb-2">SYSTEM UPGRADE</div>
-            <h2 class="text-4xl font-display text-white mb-4 glitch-text">LEVEL UP</h2>
-            <div class="text-6xl font-bold text-amber mb-4" id="lvlUpNum">2</div>
-            <div class="text-sm text-gray-400 font-mono mb-6">权限提升 // 算力增强</div>
-            <button onclick="closeModal('levelUpModal')" class="w-full py-3 bg-amber text-black font-bold uppercase tracking-widest hover:bg-white transition">ACKNOWLEDGE</button>
         </div>
     </div>
 
     <!-- PRE-FLIGHT CHECK MODAL -->
     <div id="flowCheckModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
-        <div class="hud-panel w-full max-w-md p-6 border-cyan transform transition-all bg-dark modal-content">
-            <h2 class="text-xl text-cyan mb-2 text-center" data-i18n="modal_dive_title">启动深潜模式</h2>
-            <p class="text-center text-gray-400 text-[10px] font-mono mb-6" data-i18n="modal_dive_subtitle">引擎启动前检查清单</p>
+        <div class="hud-panel w-full max-w-md p-6 transform transition-all bg-dark/95 modal-content shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+             <div class="hud-corner-bl"></div>
+             <div class="hud-corner-tr"></div>
             
-            <div class="space-y-3 mb-6">
-                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-void/50 cursor-pointer group">
+            <h2 class="text-xl text-cyan mb-1 text-center font-display tracking-wider" data-i18n="modal_dive_title">启动深潜模式</h2>
+            <div class="text-[10px] text-gray-500 text-center mb-6 font-mono uppercase">Protocol Sequence Initiated</div>
+            
+            <div class="space-y-3 mb-6 mt-4">
+                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-black/40 cursor-pointer group hover:bg-cyan/5">
                     <input type="checkbox" class="cyber-check checklist-item">
                     <div class="flex-1">
-                        <div class="text-sm font-bold text-white group-active:text-cyan" data-i18n="check_target">目标锁定</div>
-                        <div class="text-[10px] text-gray-500" data-i18n="check_target_desc">单一明确的目标。</div>
+                        <div class="text-sm font-bold text-white group-hover:text-cyan transition" data-i18n="check_target">目标锁定</div>
                     </div>
                 </label>
-                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-void/50 cursor-pointer group">
+                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-black/40 cursor-pointer group hover:bg-cyan/5">
                     <input type="checkbox" class="cyber-check checklist-item">
                     <div class="flex-1">
-                        <div class="text-sm font-bold text-white group-active:text-cyan" data-i18n="check_silence">通讯静默</div>
-                        <div class="text-[10px] text-gray-500" data-i18n="check_silence_desc">手机勿扰，关闭通知。</div>
+                        <div class="text-sm font-bold text-white group-hover:text-cyan transition" data-i18n="check_silence">通讯静默</div>
                     </div>
                 </label>
-                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-void/50 cursor-pointer group">
+                <label class="flex items-center gap-3 p-3 border border-gray-800 active:border-cyan transition bg-black/40 cursor-pointer group hover:bg-cyan/5">
                     <input type="checkbox" class="cyber-check checklist-item">
                     <div class="flex-1">
-                        <div class="text-sm font-bold text-white group-active:text-cyan" data-i18n="check_bio">生理机能</div>
-                        <div class="text-[10px] text-gray-500" data-i18n="check_bio_desc">水，咖啡，洗手间。</div>
+                        <div class="text-sm font-bold text-white group-hover:text-cyan transition" data-i18n="check_bio">生理机能</div>
                     </div>
                 </label>
             </div>
 
             <div class="flex gap-3">
-                <button onclick="closeModal('flowCheckModal')" class="flex-1 py-3 border border-gray-700 text-gray-500 text-xs font-mono uppercase hover:text-white" data-i18n="btn_abort">放弃</button>
-                <button id="engageBtn" onclick="confirmStart()" class="flex-1 py-3 bg-cyan/10 border border-cyan text-cyan font-bold font-display uppercase tracking-widest opacity-50 cursor-not-allowed" disabled data-i18n="btn_engage">接入系统</button>
+                <button onclick="closeModal('flowCheckModal')" class="flex-1 py-3 border border-gray-700 text-gray-500 text-xs font-mono uppercase hover:text-white hover:border-white transition" data-i18n="btn_abort">放弃</button>
+                <button id="engageBtn" onclick="confirmStart()" class="flex-1 py-3 bg-cyan/10 border border-cyan text-cyan font-bold font-display uppercase tracking-widest opacity-50 cursor-not-allowed hover:shadow-[0_0_15px_rgba(0,243,255,0.4)] transition" disabled data-i18n="btn_engage">接入系统</button>
             </div>
         </div>
     </div>
 
-    <!-- HISTORY MODAL -->
-    <div id="historyModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
-        <div class="hud-panel w-full max-w-lg h-[80vh] flex flex-col p-0 bg-dark modal-content">
-            <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
-                <h2 class="text-lg text-amber" data-i18n="history_title">数据档案馆</h2>
-                <button onclick="closeModal('historyModal')" class="text-gray-500 hover:text-white text-xl">×</button>
+    <!-- ARCHIVE MODAL -->
+    <div id="historyModal" class="fixed inset-0 modal-overlay z-50 hidden flex flex-col bg-void overflow-hidden">
+        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-slate-900/90 z-10 relative">
+            <div class="scanlines opacity-10"></div>
+            <h2 class="text-lg text-amber tracking-widest font-display" data-i18n="history_title">DATA ARCHIVES</h2>
+            <button onclick="closeModal('historyModal')" class="text-gray-500 hover:text-white text-xl p-2 z-20">×</button>
+        </div>
+        
+        <div class="flex-1 flex flex-col overflow-hidden relative bg-slate-900/80">
+             <div class="scanlines opacity-10"></div>
+            <!-- Month Navigation -->
+            <div class="p-4 bg-black/20 border-b border-gray-800 flex-shrink-0">
+                <div class="flex justify-between items-center mb-3 text-cyan font-mono">
+                    <button onclick="changeHeatmapMonth(-1)" class="px-3 py-1 hover:bg-cyan/20 border border-gray-700 transition">&lt;</button>
+                    <span id="heatmapMonthLabel" class="font-bold text-lg drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]">2023-10</span>
+                    <button onclick="changeHeatmapMonth(1)" class="px-3 py-1 hover:bg-cyan/20 border border-gray-700 transition">&gt;</button>
+                </div>
             </div>
-            <div id="historyList" class="flex-1 overflow-y-auto p-4 space-y-4 text-sm font-mono"></div>
-        </div>
-    </div>
 
-    <!-- GM TOOLS -->
-    <div class="fixed bottom-4 right-4 text-[10px] text-gray-800 cursor-pointer z-[50]" onclick="toggleGM()">GM</div>
-    <div class="gm-panel" id="gmPanel">
-        <div class="flex justify-between items-center text-amber mb-3 border-b border-gray-700 pb-2">
-            <span class="font-bold">DEBUG_MODE</span>
-            <button onclick="toggleGM()" class="text-gray-500">×</button>
-        </div>
-        <div class="grid grid-cols-2 gap-2 font-mono text-xs">
-            <button onclick="gmResetTasks()" class="border border-gray-600 p-2 text-gray-300">重置任务</button>
-            <button onclick="gmFastForward()" class="border border-gray-600 p-2 text-gray-300">快进时间</button>
-            <button onclick="gmAddXp()" class="border border-gray-600 p-2 text-gray-300">加 XP</button>
-            <button onclick="gmClearStorage()" class="border border-red-900 text-red-500 p-2">清空缓存</button>
+            <!-- History List -->
+            <div id="historyList" class="flex-1 overflow-y-auto p-4 space-y-3 cyber-scroll">
+                <!-- Items injected here -->
+            </div>
         </div>
     </div>
 
     <script>
-        // --- LOCALIZATION ---
+        // --- CONFIG & STATE ---
+        const CONFIG = {
+            sprint: { time: 90 * 60, color: '#00f3ff', labelKey: 'mode_deep' },
+            pomodoro: { time: 25 * 60, color: '#00f3ff', labelKey: 'mode_skirmish' },
+            break: { time: 15 * 60, color: '#0aff00', labelKey: 'mode_reboot' },
+            short: { time: 5 * 60, color: '#0aff00', labelKey: 'mode_cool' }
+        };
+
         const DICTIONARY = {
             zh: {
                 system_online: "系统在线", history_btn: "档案馆", module_timer: "计时核心",
-                status_idle: "待机中", status_focus: "专注链接", status_break: "系统冷却",
+                status_focus: "专注链接", status_break: "系统冷却",
                 mode_deep: "深潜", mode_skirmish: "突袭", mode_reboot: "重启", mode_cool: "冷却",
-                chips_label: "神经芯片", objectives_subtitle: "协议: 单日上限 3 项任务",
-                quick_ops_subtitle: "协议: < 2分钟的任务，立刻执行。",
+                desc_90: "深度心流 // 攻克核心难题", desc_25: "高频突击 // 快速清理杂务",
+                desc_15: "系统维护 // 远离屏幕休息", desc_05: "生理冷却 // 短暂调整呼吸",
                 archive_day_btn: ">> 归档今日数据 <<",
-                modal_dive_title: "启动深潜模式", modal_dive_subtitle: "引擎启动前检查清单",
-                check_target: "目标锁定", check_target_desc: "单一明确的目标。",
-                check_silence: "通讯静默", check_silence_desc: "手机勿扰，关闭通知。",
-                check_bio: "生理机能", check_bio_desc: "水，咖啡，洗手间。",
+                modal_dive_title: "启动深潜模式", 
+                check_target: "目标单一且明确", check_silence: "手机勿扰 / 通知关闭", check_bio: "生理机能调整完毕",
                 btn_abort: "放弃", btn_engage: "接入系统", history_title: "数据档案馆",
                 tab_main: "主线任务", tab_side: "突发行动",
-                task_ph: "> 输入任务指令...", side_ph: "> 2分钟内能搞定的事...",
-                dialog_reset_title: "中断警告", dialog_reset_msg: "计时器正在运行。切换模式或重置将丢失当前进度。确认执行？",
+                guide_main: "战术准则：【今日仅锁定 3 个高价值任务目标】", guide_side: "战术准则：【2分钟内可解决的临时遭遇战】",
+                task_ph: "> 输入任务指令...", side_ph: "> 快速指令...",
+                dialog_reset_title: "中断警告", dialog_reset_msg: "切换模式或重置将丢失当前心流灯和进度。确认执行？",
                 dialog_archive_title: "归档确认", dialog_archive_msg: "确认归档今日所有任务数据并重置列表？",
-                dialog_debrief_title: "任务简报", dialog_debrief_msg: "检测到提前终止。确认已完成的任务以获取部分经验值：",
+                dialog_debrief_title: "任务简报", dialog_debrief_msg: "提前终止。结算已完成任务：",
                 rank_1: "义体乞丐", rank_2: "街头混混", rank_3: "赛博浪人", rank_4: "网络行者", rank_5: "传奇佣兵", rank_6: "荒坂塔顶"
             },
             en: {
-                system_online: "SYSTEM ONLINE", history_btn: "ARCHIVES", module_timer: "TIMER CORE",
-                status_idle: "IDLE", status_focus: "LINKED", status_break: "COOLDOWN",
-                mode_deep: "DEEP", mode_skirmish: "SKIRMISH", mode_reboot: "REBOOT", mode_cool: "COOL",
-                chips_label: "NEURAL CHIPS", objectives_subtitle: "PROTOCOL: 3 TASKS MAX / DAY",
-                quick_ops_subtitle: "PROTOCOL: DO IT IF < 2 MINS.",
-                archive_day_btn: ">> ARCHIVE DAY LOG <<",
-                modal_dive_title: "INITIATE DIVE", modal_dive_subtitle: "PRE-FLIGHT CHECKLIST",
-                check_target: "TARGET LOCKED", check_target_desc: "One clear goal defined.",
-                check_silence: "COMMS SILENCED", check_silence_desc: "DND active, notifications off.",
-                check_bio: "BIO-METRICS", check_bio_desc: "Hydrated, caffeinated.",
-                btn_abort: "ABORT", btn_engage: "ENGAGE", history_title: "DATA ARCHIVES",
+                system_online: "ONLINE", history_btn: "ARCHIVE", module_timer: "TIMER CORE",
+                status_focus: "LINKED", status_break: "COOLDOWN",
+                mode_deep: "DEEP", mode_skirmish: "RUSH", mode_reboot: "REBOOT", mode_cool: "COOL",
+                desc_90: "Deep Flow // Core Objectives", desc_25: "High Freq // Clear Backlog",
+                desc_15: "Sys Maint // Screen Off", desc_05: "Bio Cool // Breathe",
+                archive_day_btn: ">> ARCHIVE LOG <<",
+                modal_dive_title: "INITIATE DIVE", 
+                check_target: "Target Locked", check_silence: "Comms Silenced", check_bio: "Bio-Metrics OK",
+                btn_abort: "ABORT", btn_engage: "ENGAGE", history_title: "DATA ARCHIVE",
                 tab_main: "PRIMARY", tab_side: "QUICK OPS",
-                task_ph: "> INPUT DIRECTIVE...", side_ph: "> QUICK TASK (< 2m)...",
-                dialog_reset_title: "INTERRUPT ALERT", dialog_reset_msg: "Timer is running. Switching/Resetting will lose progress. Confirm?",
-                dialog_archive_title: "ARCHIVE CONFIRM", dialog_archive_msg: "Archive today's log and reset tasks?",
-                dialog_debrief_title: "MISSION DEBRIEF", dialog_debrief_msg: "Early termination detected. Verify completed objectives for partial XP:",
+                guide_main: "TACTIC: [ Lock 3 High-Value Targets Only ]", guide_side: "TACTIC: [ Quick Encounters < 2mins ]",
+                task_ph: "> INPUT DIRECTIVE...", side_ph: "> QUICK TASK...",
+                dialog_reset_title: "INTERRUPT ALERT", dialog_reset_msg: "Switching/Resetting will lose current progress and flow lights. Confirm?",
+                dialog_archive_title: "ARCHIVE CONFIRM", dialog_archive_msg: "Archive today's log?",
+                dialog_debrief_title: "MISSION DEBRIEF", dialog_debrief_msg: "Early termination. Verify objectives:",
                 rank_1: "STREET RAT", rank_2: "GUTTER PUNK", rank_3: "EDGE RUNNER", rank_4: "NET RUNNER", rank_5: "LEGEND", rank_6: "ARASAKA TOP"
             }
         };
 
-        // --- AUDIO SYSTEM (ROBUST FIX) ---
+        let currentLang = localStorage.getItem('cyber_lang') || 'zh';
+        
+        const STATE = {
+            user: JSON.parse(localStorage.getItem('cyber_user')) || { xp: 0, level: 1 },
+            tasks: JSON.parse(localStorage.getItem('cyber_tasks')) || [
+                { id: 1, text: '', done: false }, { id: 2, text: '', done: false }, { id: 3, text: '', done: false }
+            ],
+            sideTasks: JSON.parse(localStorage.getItem('cyber_side_tasks')) || [], 
+            activeTab: 'primary',
+            history: JSON.parse(localStorage.getItem('cyber_history')) || [],
+            timer: JSON.parse(localStorage.getItem('cyber_timer_v35')) || {
+                active: false,
+                mode: 'sprint',
+                totalSeconds: 5400,
+                endTime: null,
+                pausedLeft: 5400,
+                flowLights: 0 // 0 to 5
+            }
+        };
+
+        // --- AUDIO SYSTEM ---
         const AudioSys = {
-            ctx: null,
-            init: function() {
-                if (!this.ctx) {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-            },
-            safeInit: function() {
-                // Call this on ANY user interaction
-                if (!this.ctx) this.init();
-                if (this.ctx && this.ctx.state === 'suspended') {
-                    this.ctx.resume();
-                }
+            ctx: null, unlocked: false,
+            init: function() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            unlock: function() {
+                if (this.unlocked || !this.ctx) return;
+                const buffer = this.ctx.createBuffer(1, 1, 22050);
+                const source = this.ctx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(this.ctx.destination);
+                source.start(0);
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                this.unlocked = true;
+                document.removeEventListener('touchstart', unlockAudio);
+                document.removeEventListener('click', unlockAudio);
             },
             playTone: function(freq, type, duration, vol = 0.1, startTime = 0) {
-                if (!this.ctx) return;
+                if (!this.ctx) this.init();
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = type; 
@@ -422,475 +583,440 @@
                 osc.stop(t + duration);
             },
             sfx: {
-                click: () => { AudioSys.safeInit(); AudioSys.playTone(800, 'square', 0.1, 0.05); },
-                quick: () => { AudioSys.safeInit(); AudioSys.playTone(1500, 'sine', 0.1, 0.05); },
+                click: () => AudioSys.playTone(800, 'square', 0.05, 0.05),
+                light: () => AudioSys.playTone(1200, 'sine', 0.5, 0.1), 
                 start: () => {
-                    AudioSys.safeInit();
                     const t = AudioSys.ctx.currentTime;
                     AudioSys.playTone(200, 'sawtooth', 0.5, 0.1, t);
-                    AudioSys.playTone(400, 'sawtooth', 0.5, 0.1, t+0.1);
                     AudioSys.playTone(800, 'sawtooth', 0.8, 0.1, t+0.2);
                 },
                 alarm: () => {
-                    AudioSys.safeInit();
                     const now = AudioSys.ctx.currentTime;
                     AudioSys.playTone(880, 'square', 0.1, 0.2, now);
-                    AudioSys.playTone(880, 'square', 0.1, 0.2, now + 0.15);
                     AudioSys.playTone(880, 'square', 0.4, 0.2, now + 0.3);
-                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
                 },
-                xp: () => {
-                    AudioSys.safeInit();
-                    AudioSys.playTone(1200, 'sine', 0.1, 0.05);
-                    setTimeout(() => AudioSys.playTone(1800, 'sine', 0.2, 0.05), 50);
-                },
-                levelUp: () => {
-                    AudioSys.safeInit();
-                    const now = AudioSys.ctx.currentTime;
-                    AudioSys.playTone(100, 'square', 1.5, 0.2, now);
-                    AudioSys.playTone(200, 'square', 1.5, 0.1, now);
-                }
+                xp: () => { AudioSys.playTone(1200, 'sine', 0.1, 0.05); setTimeout(() => AudioSys.playTone(1800, 'sine', 0.2, 0.05), 50); },
+                check: () => AudioSys.playTone(1200, 'sine', 0.1, 0.1)
             }
         };
+        function unlockAudio() { AudioSys.init(); AudioSys.unlock(); }
 
-        // --- CORE STATE ---
-        let currentLang = localStorage.getItem('cyber_lang') || 'zh';
-        
-        const STATE = {
-            user: JSON.parse(localStorage.getItem('cyber_user')) || { xp: 0, level: 1 },
-            tasks: JSON.parse(localStorage.getItem('cyber_tasks')) || [
-                { id: 1, text: '', done: false }, { id: 2, text: '', done: false }, { id: 3, text: '', done: false }
-            ],
-            sideTasks: JSON.parse(localStorage.getItem('cyber_side_tasks')) || [], // New
-            activeTab: 'primary',
-            history: JSON.parse(localStorage.getItem('cyber_history')) || [],
-            timer: {
-                totalSeconds: 5400,
-                remaining: 5400,
-                active: false,
-                mode: 'sprint',
-                interval: null,
-                startTime: 0 // Track when started for partial credit
-            }
-        };
+        // --- TIMER & FLOW LOGIC ---
+        let timerTicker = null;
 
-        const UI = {
-            timerDisplay: document.getElementById('timerDisplay'),
-            ring: document.getElementById('progressRing'),
-            modeLabel: document.getElementById('modeLabel'),
-            taskList: document.getElementById('taskList'),
-            modal: document.getElementById('flowCheckModal'),
-            engageBtn: document.getElementById('engageBtn')
-        };
-
-        const CONFIG = {
-            sprint: { time: 90 * 60, color: '#00f3ff', labelKey: 'mode_deep' },
-            pomodoro: { time: 25 * 60, color: '#00f3ff', labelKey: 'mode_skirmish' },
-            break: { time: 15 * 60, color: '#0aff00', labelKey: 'mode_reboot' },
-            short: { time: 5 * 60, color: '#0aff00', labelKey: 'mode_cool' }
-        };
-
-        // --- COMMON FUNCTIONS ---
-        function t(key) { return DICTIONARY[currentLang][key] || key; }
-
-        function saveSystem() {
-            localStorage.setItem('cyber_tasks', JSON.stringify(STATE.tasks));
-            localStorage.setItem('cyber_side_tasks', JSON.stringify(STATE.sideTasks));
-            localStorage.setItem('cyber_user', JSON.stringify(STATE.user));
-            localStorage.setItem('cyber_history', JSON.stringify(STATE.history));
-            localStorage.setItem('cyber_lang', currentLang);
+        function updateRealTime() {
+            const now = new Date();
+            const str = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('realTimeClock').innerText = str;
         }
 
-        // --- UNIFIED MODAL SYSTEM ---
-        function showDialog(title, body, onConfirm, showCancel = true, extraContent = null) {
-            AudioSys.sfx.click();
-            document.getElementById('dialogTitle').innerText = title;
-            document.getElementById('dialogBody').innerText = body;
+        function updateTimerUI(remaining) {
+            const m = Math.floor(remaining / 60);
+            const s = remaining % 60;
+            const displayStr = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            document.getElementById('timerDisplay').textContent = displayStr;
             
-            const confirmBtn = document.getElementById('dialogConfirm');
-            const cancelBtn = document.getElementById('dialogCancel');
-            const extraDiv = document.getElementById('dialogExtra');
+            const circumference = 552;
+            const total = STATE.timer.totalSeconds || CONFIG[STATE.timer.mode].time; 
+            // Fix for division by zero if totalSeconds is 0
+            const offset = total > 0 ? circumference - (remaining / total) * circumference : 0;
+            const ring = document.getElementById('progressRing');
+            ring.style.strokeDashoffset = offset;
+            
+            const cfg = CONFIG[STATE.timer.mode];
+            ring.style.stroke = cfg.color;
+            document.getElementById('modeLabel').style.color = cfg.color;
+            document.getElementById('modeLabel').textContent = STATE.timer.active ? t('status_focus') : t(cfg.labelKey);
 
-            cancelBtn.style.display = showCancel ? 'block' : 'none';
-            
-            // Clone button to remove old listeners
-            const newConfirm = confirmBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
-            
-            newConfirm.onclick = () => {
-                closeDialog();
-                if(onConfirm) onConfirm();
-            };
+            const slots = document.querySelectorAll('.flow-slot');
+            slots.forEach((slot, i) => {
+                if (i < STATE.timer.flowLights) slot.classList.add('active');
+                else slot.classList.remove('active');
+            });
 
-            // Inject extra content (checkboxes etc)
-            if(extraContent) {
-                extraDiv.innerHTML = '';
-                extraDiv.appendChild(extraContent);
-                extraDiv.classList.remove('hidden');
+            const btnPlay = document.getElementById('iconPlay');
+            const btnPause = document.getElementById('iconPause');
+            if(STATE.timer.active) {
+                btnPlay.classList.add('hidden');
+                btnPause.classList.remove('hidden');
             } else {
-                extraDiv.classList.add('hidden');
+                btnPlay.classList.remove('hidden');
+                btnPause.classList.add('hidden');
             }
 
-            document.getElementById('dialogModal').classList.remove('hidden');
+            document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
+            if(STATE.timer.mode) {
+                const activeBtn = document.getElementById(`mode-${STATE.timer.mode}`);
+                if(activeBtn) activeBtn.classList.add('active');
+            }
         }
 
-        function closeDialog() {
-            document.getElementById('dialogModal').classList.add('hidden');
-        }
-
-        function closeModal(id) {
-            AudioSys.sfx.click();
-            document.getElementById(id).classList.add('hidden');
-        }
-
-        // --- TIMER ENGINE ---
-        function updateTimerDisplay() {
-            const m = Math.floor(STATE.timer.remaining / 60);
-            const s = STATE.timer.remaining % 60;
-            UI.timerDisplay.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        function tick() {
+            if (!STATE.timer.active) return;
+            const now = Date.now();
+            const remaining = Math.max(0, Math.ceil((STATE.timer.endTime - now) / 1000));
             
-            const circumference = 628;
-            const offset = circumference - (STATE.timer.remaining / STATE.timer.totalSeconds) * circumference;
-            UI.ring.style.strokeDashoffset = offset;
+            const elapsed = STATE.timer.totalSeconds - remaining;
+            const lightsShouldBe = Math.min(5, Math.floor(elapsed / 300));
             
-            const currentConfig = CONFIG[STATE.timer.mode];
-            UI.ring.style.stroke = currentConfig.color;
-        }
+            if (lightsShouldBe > STATE.timer.flowLights) {
+                STATE.timer.flowLights = lightsShouldBe;
+                AudioSys.sfx.light();
+            }
 
-        function updateTimerLabel() {
-            const currentConfig = CONFIG[STATE.timer.mode];
-            UI.modeLabel.textContent = STATE.timer.active ? t('status_focus') : t(currentConfig.labelKey);
-            UI.modeLabel.style.color = currentConfig.color;
+            updateTimerUI(remaining);
+            if (remaining <= 0) completeTimer();
         }
 
         function toggleTimer() {
-            AudioSys.safeInit();
             AudioSys.sfx.click();
-            
             if (STATE.timer.active) {
-                // Pause logic
-                clearInterval(STATE.timer.interval);
+                const now = Date.now();
+                const remaining = Math.max(0, Math.ceil((STATE.timer.endTime - now) / 1000));
                 STATE.timer.active = false;
-                document.getElementById('mainActionBtn').innerHTML = '▶';
-                updateTimerLabel();
+                STATE.timer.pausedLeft = remaining;
+                STATE.timer.endTime = null;
+                STATE.timer.flowLights = Math.max(0, STATE.timer.flowLights - 1);
+                clearInterval(timerTicker);
+                updateTimerUI(STATE.timer.pausedLeft);
             } else {
-                // Start logic
-                if (STATE.timer.remaining <= 0) return;
-                STATE.timer.startTime = Date.now(); // Log start time
-                startTicker();
+                if (STATE.timer.pausedLeft <= 0) return;
+                STATE.timer.active = true;
+                STATE.timer.endTime = Date.now() + (STATE.timer.pausedLeft * 1000);
+                AudioSys.sfx.start();
+                tick(); 
+                timerTicker = setInterval(tick, 1000);
             }
+            saveSystem();
         }
 
-        function startTicker() {
-            STATE.timer.active = true;
-            document.getElementById('mainActionBtn').innerHTML = '❚❚';
-            updateTimerLabel();
-            AudioSys.sfx.start();
-            
-            STATE.timer.interval = setInterval(() => {
-                if (STATE.timer.remaining > 0) {
-                    STATE.timer.remaining--;
-                    updateTimerDisplay();
-                } else {
-                    completeTimer();
-                }
-            }, 1000);
+        function setTimerDirect(min, mode) {
+            clearInterval(timerTicker);
+            STATE.timer.active = false;
+            STATE.timer.mode = mode;
+            STATE.timer.totalSeconds = min * 60;
+            STATE.timer.pausedLeft = min * 60;
+            STATE.timer.endTime = null;
+            STATE.timer.flowLights = 0;
+            updateTimerUI(STATE.timer.pausedLeft);
+            saveSystem();
         }
 
         function checkTimerSafety(min, mode) {
-            AudioSys.safeInit();
-            // If timer is running, warn user
-            if(STATE.timer.active || (STATE.timer.remaining !== STATE.timer.totalSeconds && STATE.timer.remaining !== 0)) {
-                showDialog(t('dialog_reset_title'), t('dialog_reset_msg'), () => {
-                    preFlightOrDirect(min, mode);
-                });
+            const isActiveOrPaused = STATE.timer.active || (STATE.timer.pausedLeft !== STATE.timer.totalSeconds && STATE.timer.pausedLeft > 0);
+            if(isActiveOrPaused) {
+                showDialog(t('dialog_reset_title'), t('dialog_reset_msg'), () => preFlightOrDirect(min, mode));
             } else {
                 preFlightOrDirect(min, mode);
             }
         }
 
         function preFlightOrDirect(min, mode) {
-            // If it's a "Focus" mode (Deep/Skirmish), show checklist
+            AudioSys.sfx.click();
             if(mode === 'sprint' || mode === 'pomodoro') {
-                preFlightCheck(min, mode);
+                document.getElementById('flowCheckModal').classList.remove('hidden');
+                document.getElementById('flowCheckModal').dataset.targetMin = min;
+                document.getElementById('flowCheckModal').dataset.targetMode = mode;
+                document.querySelectorAll('.checklist-item').forEach(cb => cb.checked = false);
+                // Rebind for sound
+                document.querySelectorAll('.cyber-check.checklist-item').forEach(cb => {
+                    const clone = cb.cloneNode(true);
+                    cb.parentNode.replaceChild(clone, cb);
+                    clone.addEventListener('change', function() {
+                        AudioSys.sfx.check();
+                        checkGatekeeper();
+                    });
+                });
+                checkGatekeeper();
             } else {
                 setTimerDirect(min, mode);
             }
         }
 
-        function preFlightCheck(min, mode) {
-            UI.modal.classList.remove('hidden');
-            UI.modal.dataset.targetMin = min;
-            UI.modal.dataset.targetMode = mode;
-            document.querySelectorAll('.checklist-item').forEach(cb => cb.checked = false);
-            checkGatekeeper();
-        }
-
-        function setTimerDirect(min, mode) {
-            clearInterval(STATE.timer.interval);
-            STATE.timer.active = false;
-            STATE.timer.mode = mode;
-            STATE.timer.totalSeconds = min * 60;
-            STATE.timer.remaining = min * 60;
-            document.getElementById('mainActionBtn').innerHTML = '▶';
-            updateTimerDisplay();
-            updateTimerLabel();
-        }
-
         function confirmStart() {
-            const min = UI.modal.dataset.targetMin;
-            const mode = UI.modal.dataset.targetMode;
+            const min = document.getElementById('flowCheckModal').dataset.targetMin;
+            const mode = document.getElementById('flowCheckModal').dataset.targetMode;
             closeModal('flowCheckModal');
             setTimerDirect(min, mode);
-            startTicker();
+            toggleTimer();
         }
-
+        
         function checkGatekeeper() {
             const allChecked = Array.from(document.querySelectorAll('.checklist-item')).every(cb => cb.checked);
-            const btn = UI.engageBtn;
-            if (allChecked) {
-                btn.disabled = false;
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                btn.disabled = true;
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
+            const btn = document.getElementById('engageBtn');
+            btn.disabled = !allChecked;
+            if(allChecked) btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            else btn.classList.add('opacity-50', 'cursor-not-allowed');
         }
 
-        // --- STOP & DEBRIEF (Early Finish) ---
         function triggerStop() {
-            AudioSys.safeInit();
-            if(!STATE.timer.active && STATE.timer.remaining === STATE.timer.totalSeconds) return;
-
-            // Pause
-            clearInterval(STATE.timer.interval);
+            AudioSys.sfx.click();
+            if(STATE.timer.pausedLeft <= 0 && !STATE.timer.active) {
+                setTimerDirect(CONFIG[STATE.timer.mode].time / 60, STATE.timer.mode);
+                return;
+            }
+            clearInterval(timerTicker);
             STATE.timer.active = false;
-            document.getElementById('mainActionBtn').innerHTML = '▶';
-
-            // Calculate Partial XP (1 XP per 2 mins completed)
-            const elapsedSeconds = STATE.timer.totalSeconds - STATE.timer.remaining;
-            const xpEarned = Math.floor((elapsedSeconds / 60) * 0.5); 
-
-            // Create checkbox list for Debrief
-            const listDiv = document.createElement('div');
-            listDiv.className = "flex flex-col gap-2 bg-black/50 p-3 border border-gray-700 max-h-40 overflow-y-auto";
             
+            let elapsed = 0;
+            if(STATE.timer.endTime) elapsed = STATE.timer.totalSeconds - Math.max(0, Math.ceil((STATE.timer.endTime - Date.now()) / 1000));
+            else elapsed = STATE.timer.totalSeconds - STATE.timer.pausedLeft;
+
+            STATE.timer.pausedLeft = STATE.timer.totalSeconds;
+            STATE.timer.flowLights = 0;
+            STATE.timer.endTime = null;
+            updateTimerUI(STATE.timer.totalSeconds);
+            saveSystem();
+
+            if(elapsed > 60) showDebrief(Math.floor((elapsed / 60) * 0.5));
+        }
+
+        function completeTimer() {
+            clearInterval(timerTicker);
+            STATE.timer.active = false;
+            STATE.timer.endTime = null;
+            STATE.timer.pausedLeft = 0;
+            updateTimerUI(0);
+            saveSystem();
+            AudioSys.sfx.alarm();
+            
+            const baseXp = Math.floor(STATE.timer.totalSeconds / 60 * 2);
+            const bonusXp = STATE.timer.flowLights * 10;
+            GAME.addXp(baseXp + bonusXp);
+
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00f3ff', '#ff0055'] });
+            setTimeout(() => showDebrief(0), 1000);
+        }
+
+        function showDebrief(extraXp) {
+             const listDiv = document.createElement('div');
+             listDiv.className = "flex flex-col gap-2 max-h-40 overflow-y-auto";
             STATE.tasks.forEach((t, i) => {
                 if(t.text && !t.done) {
                     const label = document.createElement('label');
-                    label.className = "flex items-center gap-2 text-xs text-white cursor-pointer hover:text-cyan";
+                    label.className = "flex items-center gap-2 text-xs text-white cursor-pointer hover:text-cyan border border-gray-800 p-2 bg-void";
                     label.innerHTML = `<input type="checkbox" class="cyber-check debrief-check" value="${i}"> ${t.text}`;
                     listDiv.appendChild(label);
                 }
             });
-
             if(listDiv.children.length === 0) listDiv.innerHTML = '<div class="text-gray-500 italic text-xs">No active tasks found.</div>';
-
-            showDialog(t('dialog_debrief_title'), `${t('dialog_debrief_msg')} (+${xpEarned} XP)`, () => {
-                // Apply ticked tasks
+            
+            showDialog(t('dialog_debrief_title'), t('dialog_debrief_msg'), () => {
                 const checks = document.querySelectorAll('.debrief-check');
                 checks.forEach(cb => {
-                    if(cb.checked) {
-                        STATE.tasks[cb.value].done = true;
-                        GAME.addXp(50); // XP for task
-                    }
+                    if(cb.checked) { STATE.tasks[cb.value].done = true; GAME.addXp(50); }
                 });
-                GAME.addXp(xpEarned); // XP for time
+                if(extraXp > 0) GAME.addXp(extraXp);
                 saveSystem();
                 renderTasks();
-                setTimerDirect(CONFIG[STATE.timer.mode].time / 60, STATE.timer.mode); // Reset to full
+                setTimerDirect(CONFIG[STATE.timer.mode].time / 60, STATE.timer.mode);
             }, true, listDiv);
         }
 
-        function completeTimer() {
-            clearInterval(STATE.timer.interval);
-            STATE.timer.active = false;
-            document.getElementById('mainActionBtn').innerHTML = '▶';
-            
-            AudioSys.sfx.alarm();
-            
-            const minutes = STATE.timer.totalSeconds / 60;
-            const xpEarned = Math.floor(minutes * 2);
-            GAME.addXp(xpEarned);
-
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00f3ff', '#ff0055'] });
-            
-            // Ask for task checkoff
-            setTimeout(() => triggerStop(), 1000); 
-        }
-
-        // --- TASK SYSTEM ---
+        // --- TASKS ---
         function switchTab(tab) {
-            AudioSys.safeInit();
             AudioSys.sfx.click();
             STATE.activeTab = tab;
+            document.querySelectorAll('#tab-primary, #tab-side').forEach(b => {
+                b.classList.remove('active', 'opacity-100');
+                b.classList.add('opacity-40');
+            });
+            document.getElementById(`tab-${tab}`).classList.remove('opacity-40');
+            document.getElementById(`tab-${tab}`).classList.add('active', 'opacity-100');
             
-            // UI Toggle
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            
-            // Desc Toggle
-            document.getElementById('taskDesc').innerText = tab === 'primary' ? t('objectives_subtitle') : t('quick_ops_subtitle');
+            // Switch Guideline Text
+            const guideEl = document.getElementById('taskGuide');
+            if(tab === 'primary') {
+                guideEl.innerHTML = `<span class="animate-pulse">⚠️</span> ${t('guide_main')}`;
+            } else {
+                guideEl.innerHTML = `<span class="animate-pulse">⚡</span> ${t('guide_side')}`;
+            }
             
             renderTasks();
         }
 
         function renderTasks() {
-            UI.taskList.innerHTML = '';
+            const container = document.getElementById('taskList');
+            container.innerHTML = '';
             
             if (STATE.activeTab === 'primary') {
-                renderPrimaryTasks();
+                let completed = 0;
+                STATE.tasks.forEach((task, index) => {
+                    if(task.done) completed++;
+                    const div = document.createElement('div');
+                    div.className = `flex items-center gap-3 p-3 border transition-all duration-300 ${task.done ? 'border-neon-green bg-neon-green/10' : 'border-gray-700 bg-black/20'}`;
+                    div.innerHTML = `
+                        <div class="font-mono text-xs opacity-50 w-4">0${index+1}</div>
+                        <input type="text" value="${task.text}" class="flex-1 bg-transparent border-none outline-none text-white font-mono placeholder-gray-600 text-sm ${task.done ? 'line-through text-neon-green' : ''}" placeholder="${t('task_ph')}" onchange="STATE.tasks[${index}].text=this.value;saveSystem();" ${task.done ? 'disabled' : ''}>
+                        <button onclick="toggleTask(${index}, this)" class="w-8 h-8 border flex items-center justify-center transition ${task.done ? 'border-neon-green text-neon-green' : 'border-gray-600 text-gray-600 active:border-cyan active:text-cyan'}">${task.done ? '✓' : '⚡'}</button>`;
+                    container.appendChild(div);
+                });
+                document.getElementById('taskProgress').textContent = `${completed}/3`;
             } else {
-                renderSideTasks();
+                document.getElementById('taskProgress').innerHTML = '∞';
+                const inputDiv = document.createElement('div');
+                inputDiv.className = 'border border-gray-700 p-2 flex gap-2 mb-2 bg-black/40';
+                inputDiv.innerHTML = `<input type="text" id="newSideTask" class="flex-1 bg-transparent border-none outline-none text-white text-xs font-mono" placeholder="${t('side_ph')}"><button onclick="addSideTask()" class="text-cyan font-bold text-lg px-2">+</button>`;
+                container.appendChild(inputDiv);
+                STATE.sideTasks.forEach((txt, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-2 border border-gray-700 bg-black/20';
+                    div.innerHTML = `<span class="text-xs text-gray-300">${txt}</span><button onclick="completeSideTask(${idx}, this)" class="text-gray-600 hover:text-cyan text-xs font-bold">[ DONE ]</button>`;
+                    container.appendChild(div);
+                });
             }
-        }
-
-        function renderPrimaryTasks() {
-            let completed = 0;
-            
-            STATE.tasks.forEach((task, index) => {
-                if(task.done) completed++;
-                
-                const div = document.createElement('div');
-                div.className = `flex items-center gap-3 p-3 border transition-all duration-300 ${task.done ? 'border-neon-green bg-neon-green/10' : 'border-gray-800 bg-void/40 active:border-cyan'}`;
-                
-                div.innerHTML = `
-                    <div class="font-mono text-xs opacity-50 w-4">0${index+1}</div>
-                    <input type="text" 
-                        id="taskInput_${index}"
-                        value="${task.text}" 
-                        class="flex-1 bg-transparent border-none outline-none text-white font-mono placeholder-gray-700 text-sm ${task.done ? 'line-through text-neon-green' : ''}"
-                        placeholder="${t('task_ph')}"
-                        onchange="updateTaskText(${index}, this.value)"
-                        ${task.done ? 'disabled' : ''}
-                    >
-                    <button onclick="toggleTask(${index}, this)" class="w-8 h-8 border flex items-center justify-center transition ${task.done ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-700 active:border-cyan active:text-cyan'}">
-                        ${task.done ? '✓' : '⚡'}
-                    </button>
-                `;
-                UI.taskList.appendChild(div);
-            });
-            
-            const progressEl = document.getElementById('taskProgress');
-            progressEl.textContent = `${completed}/3`;
-            progressEl.className = `flex-1 text-right text-3xl font-display ${completed === 3 ? 'text-neon-green glitch-text' : 'text-gray-700'}`;
-        }
-
-        function renderSideTasks() {
-            const progressEl = document.getElementById('taskProgress');
-            progressEl.innerHTML = '<span class="text-xs tracking-widest text-cyan">∞</span>';
-
-            // Add Input for new Side Task
-            const inputDiv = document.createElement('div');
-            inputDiv.className = 'border border-gray-700 p-2 flex gap-2 mb-2 bg-black';
-            inputDiv.innerHTML = `
-                <input type="text" id="newSideTask" class="flex-1 bg-transparent border-none outline-none text-white text-xs font-mono" placeholder="${t('side_ph')}">
-                <button onclick="addSideTask()" class="text-cyan font-bold text-lg px-2">+</button>
-            `;
-            UI.taskList.appendChild(inputDiv);
-
-            // Render List
-            STATE.sideTasks.forEach((txt, idx) => {
-                const div = document.createElement('div');
-                div.className = 'flex items-center justify-between p-2 border border-gray-800 bg-void/30';
-                div.innerHTML = `
-                    <span class="text-xs text-gray-300">${txt}</span>
-                    <button onclick="completeSideTask(${idx}, this)" class="text-gray-600 hover:text-cyan text-xs font-bold">[ DONE ]</button>
-                `;
-                UI.taskList.appendChild(div);
-            });
-        }
-
-        function addSideTask() {
-            const input = document.getElementById('newSideTask');
-            const val = input.value.trim();
-            if(val) {
-                STATE.sideTasks.unshift(val); // Add to top
-                saveSystem();
-                renderTasks();
-                AudioSys.sfx.click();
-            }
-        }
-
-        function completeSideTask(idx, btnEl) {
-            AudioSys.sfx.quick();
-            // Animation then remove
-            btnEl.parentElement.style.opacity = '0';
-            btnEl.parentElement.style.transform = 'translateX(20px)';
-            
-            GAME.addXp(15, btnEl); // Small XP reward
-
-            setTimeout(() => {
-                STATE.sideTasks.splice(idx, 1);
-                saveSystem();
-                renderTasks();
-            }, 300);
-        }
-
-        function updateTaskText(index, val) {
-            STATE.tasks[index].text = val;
-            if(!val.trim()) STATE.tasks[index].done = false;
-            saveSystem();
-            if(!val.trim()) renderTasks();
         }
 
         function toggleTask(index, btnEl) {
-            AudioSys.safeInit();
             AudioSys.sfx.click();
             if(!STATE.tasks[index].done && !STATE.tasks[index].text.trim()) return;
-
             STATE.tasks[index].done = !STATE.tasks[index].done;
-            if(STATE.tasks[index].done) {
-                AudioSys.sfx.xp();
-                GAME.addXp(50, btnEl);
-            }
+            if(STATE.tasks[index].done) { AudioSys.sfx.xp(); GAME.addXp(50, btnEl); }
             saveSystem();
             renderTasks();
-            updateUserStats();
+        }
+
+        function addSideTask() {
+            const val = document.getElementById('newSideTask').value.trim();
+            if(val) { STATE.sideTasks.unshift(val); saveSystem(); renderTasks(); AudioSys.sfx.click(); }
+        }
+
+        function completeSideTask(idx, btnEl) {
+            AudioSys.sfx.click();
+            GAME.addXp(15, btnEl);
+            STATE.sideTasks.splice(idx, 1);
+            saveSystem();
+            renderTasks();
         }
 
         function archiveDay() {
-            AudioSys.safeInit();
-            const hasContent = STATE.tasks.some(t => t.text.trim().length > 0) || STATE.sideTasks.length > 0;
-            if(!hasContent) return;
-
+            AudioSys.sfx.click();
+            if(!STATE.tasks.some(t => t.text) && !STATE.sideTasks.length) return;
             showDialog(t('dialog_archive_title'), t('dialog_archive_msg'), () => {
-                const now = new Date();
-                const record = {
-                    date: now.toISOString(),
+                STATE.history.unshift({
+                    date: new Date().toISOString(),
                     tasks: JSON.parse(JSON.stringify(STATE.tasks)),
                     sideTasks: [...STATE.sideTasks],
-                    completedCount: STATE.tasks.filter(t => t.done).length
-                };
-
-                STATE.history.unshift(record);
+                    completedCount: STATE.tasks.filter(t=>t.done).length + STATE.sideTasks.length
+                });
                 STATE.tasks.forEach(t => { t.text = ''; t.done = false; });
-                STATE.sideTasks = []; // Clear side tasks daily
+                STATE.sideTasks = [];
                 saveSystem();
                 renderTasks();
-                AudioSys.sfx.xp();
             });
         }
 
-        // --- RPG SYSTEM ---
+        // --- HEATMAP ARCHIVE ---
+        let viewDate = new Date();
+        
+        function openHistory() {
+            AudioSys.sfx.click();
+            viewDate = new Date(); 
+            renderHistoryList(); 
+            document.getElementById('historyModal').classList.remove('hidden');
+        }
+
+        function changeHeatmapMonth(delta) {
+            AudioSys.sfx.click();
+            viewDate.setMonth(viewDate.getMonth() + delta);
+            renderHistoryList();
+        }
+        
+        function renderHistoryList() {
+            const y = viewDate.getFullYear();
+            const m = viewDate.getMonth();
+            document.getElementById('heatmapMonthLabel').textContent = `${y}-${String(m+1).padStart(2,'0')}`;
+            
+            const monthRecords = STATE.history.filter(h => {
+                const recordDate = new Date(h.date);
+                return recordDate.getFullYear() === y && recordDate.getMonth() === m;
+            });
+            monthRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            
+            if(!monthRecords || monthRecords.length === 0) {
+                list.innerHTML = `<div class="text-center text-gray-600 mt-4 font-mono">NO DATA SECTOR ${y}-${String(m+1).padStart(2,'0')}</div>`;
+                return;
+            }
+            
+            const groupedRecords = {};
+            monthRecords.forEach(rec => {
+                const dateStr = rec.date.split('T')[0];
+                if(!groupedRecords[dateStr]) groupedRecords[dateStr] = [];
+                groupedRecords[dateStr].push(rec);
+            });
+            
+            Object.keys(groupedRecords).forEach(dateStr => {
+                const dateRecords = groupedRecords[dateStr];
+                const totalPoints = dateRecords.reduce((sum, rec) => sum + rec.completedCount, 0);
+                
+                const dateCard = document.createElement('div');
+                dateCard.className = "border border-gray-700 bg-white/5 p-3";
+                
+                const dateHeader = document.createElement('div');
+                dateHeader.className = "flex justify-between items-center mb-2";
+                dateHeader.innerHTML = `
+                    <span class="text-amber font-bold font-display">${formatDisplayDate(dateStr)}</span>
+                    <span class="text-xs text-gray-500 font-mono">PTS: ${totalPoints}</span>
+                `;
+                dateCard.appendChild(dateHeader);
+                
+                dateRecords.forEach(rec => {
+                    const recordDiv = document.createElement('div');
+                    recordDiv.className = "border-t border-gray-700 pt-2 mt-2";
+                    
+                    const timeDiv = document.createElement('div');
+                    timeDiv.className = "flex justify-between text-[10px] text-gray-400 mb-1 font-mono";
+                    const recTime = new Date(rec.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    timeDiv.innerHTML = `<span>${recTime}</span><span>${rec.completedCount} pts</span>`;
+                    recordDiv.appendChild(timeDiv);
+                    
+                    if(rec.tasks && rec.tasks.length > 0) {
+                        rec.tasks.forEach(t => {
+                            if(t.text) {
+                                const taskDiv = document.createElement('div');
+                                taskDiv.className = `text-xs ${t.done?'text-gray-300':'text-gray-600'} flex gap-2 mb-1`;
+                                taskDiv.innerHTML = `<span class="${t.done?'text-green-500':'text-red-500'}">${t.done?'✓':'×'}</span> ${t.text}`;
+                                recordDiv.appendChild(taskDiv);
+                            }
+                        });
+                    }
+                    
+                    if(rec.sideTasks && rec.sideTasks.length) {
+                        const sideHeader = document.createElement('div');
+                        sideHeader.className = "mt-2 text-[10px] text-cyan uppercase font-mono";
+                        sideHeader.textContent = "Quick Ops";
+                        recordDiv.appendChild(sideHeader);
+                        
+                        rec.sideTasks.forEach(s => {
+                            const sideDiv = document.createElement('div');
+                            sideDiv.className = "text-xs text-gray-500 pl-2";
+                            sideDiv.textContent = `› ${s}`;
+                            recordDiv.appendChild(sideDiv);
+                        });
+                    }
+                    
+                    dateCard.appendChild(recordDiv);
+                });
+                list.appendChild(dateCard);
+            });
+        }
+        
+        function formatDisplayDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString([], {month: 'short', day: 'numeric'});
+        }
+        
+        // --- RPG & SYSTEM ---
         const GAME = {
             titles: ['rank_1', 'rank_2', 'rank_3', 'rank_4', 'rank_5', 'rank_6'],
             calculateLevel: (xp) => Math.floor(Math.sqrt(xp / 100)) + 1,
             nextLevelXp: (lvl) => 100 * Math.pow(lvl, 2),
-            addXp: (amount, eventType) => {
+            addXp: (amount, el) => {
                 STATE.user.xp += amount;
-                const newLevel = GAME.calculateLevel(STATE.user.xp);
-                showFloatingText(`+${amount} XP`, eventType);
-                
-                if(newLevel > STATE.user.level) {
-                    STATE.user.level = newLevel;
-                    // Custom Level Up Modal
-                    setTimeout(() => {
-                        AudioSys.sfx.levelUp();
-                        document.getElementById('lvlUpNum').innerText = newLevel;
-                        document.getElementById('levelUpModal').classList.remove('hidden');
-                    }, 500);
-                }
+                if(el) showFloatingText(`+${amount} XP`, el);
                 saveSystem();
                 updateUserStats();
             }
@@ -900,136 +1026,119 @@
             const lvl = GAME.calculateLevel(STATE.user.xp);
             const nextXp = GAME.nextLevelXp(lvl);
             const prevXp = GAME.nextLevelXp(lvl - 1);
-            const levelRange = nextXp - prevXp;
-            const currentProgress = STATE.user.xp - prevXp;
-            const percent = Math.min(100, Math.max(0, (currentProgress / levelRange) * 100));
-
+            const percent = Math.min(100, Math.max(0, ((STATE.user.xp - prevXp) / (nextXp - prevXp)) * 100));
             document.getElementById('userLevel').innerText = lvl;
             document.getElementById('currentXp').innerText = STATE.user.xp;
             document.getElementById('nextLevelXp').innerText = nextXp;
             document.getElementById('xpBar').style.width = `${percent}%`;
-            
-            const titleIndex = Math.min(lvl - 1, GAME.titles.length - 1);
-            document.getElementById('userTitle').innerText = t(GAME.titles[titleIndex]);
+            document.getElementById('userTitle').innerText = t(GAME.titles[Math.min(lvl - 1, GAME.titles.length - 1)]);
+        }
+
+        // GM Functions
+        function gmAddXp() { GAME.addXp(500); }
+        function gmResetTimer() { triggerStop(); }
+        function gmClearData() {
+            if(confirm("WIPE ALL DATA?")) {
+                localStorage.clear();
+                location.reload();
+            }
         }
 
         function showFloatingText(text, sourceElement) {
             const float = document.createElement('div');
-            float.className = 'xp-float';
             float.innerText = text;
-            let x, y;
-            if(sourceElement && sourceElement.getBoundingClientRect) {
-                const rect = sourceElement.getBoundingClientRect();
-                x = rect.left + rect.width / 2;
-                y = rect.top;
-            } else {
-                x = window.innerWidth / 2;
-                y = window.innerHeight / 2;
-            }
-            float.style.left = `${x}px`;
-            float.style.top = `${y}px`;
+            float.className = 'fixed text-amber font-bold pointer-events-none z-[999] text-lg animate-[floatUp_1s_ease-out_forwards] font-display';
+            const rect = sourceElement.getBoundingClientRect();
+            float.style.left = `${rect.left + rect.width/2}px`;
+            float.style.top = `${rect.top}px`;
             document.body.appendChild(float);
-            setTimeout(() => float.remove(), 1500);
+            setTimeout(() => float.remove(), 1000);
         }
 
-        // --- UTILS ---
-        function openHistory() {
-            AudioSys.safeInit();
-            const list = document.getElementById('historyList');
-            list.innerHTML = '';
-            
-            if(STATE.history.length === 0) {
-                list.innerHTML = `<div class="text-center text-gray-600 mt-10">NO DATA FOUND</div>`;
-            } else {
-                STATE.history.forEach(rec => {
-                    const dateObj = new Date(rec.date);
-                    const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    
-                    const div = document.createElement('div');
-                    div.className = 'border border-gray-800 p-3 bg-white/5 mb-2';
-                    
-                    let taskHtml = '';
-                    rec.tasks.forEach(t => {
-                        if(t.text) {
-                            taskHtml += `<div class="flex gap-2 items-center text-xs text-gray-400">
-                                <span class="${t.done ? 'text-neon-green' : 'text-red-500'}">${t.done ? '✓' : '×'}</span>
-                                <span class="${t.done ? 'line-through' : ''}">${t.text}</span>
-                            </div>`;
-                        }
-                    });
-
-                    div.innerHTML = `
-                        <div class="flex justify-between items-center mb-2 border-b border-gray-700 pb-1">
-                            <span class="text-neon-cyan">${dateStr}</span>
-                            <span class="text-xs ${rec.completedCount >= 3 ? 'text-neon-green' : 'text-gray-500'}">SCORE: ${rec.completedCount}</span>
-                        </div>
-                        <div class="space-y-1">${taskHtml}</div>
-                    `;
-                    list.appendChild(div);
-                });
-            }
-            document.getElementById('historyModal').classList.remove('hidden');
+        function t(k) { return DICTIONARY[currentLang][k] || k; }
+        function saveSystem() { 
+            localStorage.setItem('cyber_user', JSON.stringify(STATE.user));
+            localStorage.setItem('cyber_tasks', JSON.stringify(STATE.tasks));
+            localStorage.setItem('cyber_side_tasks', JSON.stringify(STATE.sideTasks));
+            localStorage.setItem('cyber_history', JSON.stringify(STATE.history));
+            localStorage.setItem('cyber_lang', currentLang);
+            localStorage.setItem('cyber_timer_v35', JSON.stringify(STATE.timer));
         }
-
-        function toggleLang() {
-            currentLang = currentLang === 'zh' ? 'en' : 'zh';
-            AudioSys.sfx.click();
-            saveSystem();
-            renderText();
-        }
-
+        function toggleLang() { currentLang = currentLang==='zh'?'en':'zh'; document.getElementById('langBtn').innerText=currentLang==='zh'?'EN':'中'; saveSystem(); renderText(); }
         function renderText() {
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                el.innerText = t(el.dataset.i18n);
-            });
-            document.querySelectorAll('input[placeholder]').forEach(el => {
-               if(el.id.includes('taskInput')) el.placeholder = t('task_ph');
-               if(el.id === 'newSideTask') el.placeholder = t('side_ph');
-            });
-            document.getElementById('langBtn').innerText = currentLang === 'zh' ? 'EN' : '中';
+            document.querySelectorAll('[data-i18n]').forEach(el => el.innerText = t(el.dataset.i18n));
             updateUserStats();
-            updateTimerLabel();
-            // Update tab text specifically
-            document.getElementById('tab-primary').innerText = t('tab_main');
-            document.getElementById('tab-side').innerText = t('tab_side');
-        }
-        
-        function toggleChip(el) {
-            AudioSys.sfx.click();
-            if(el.style.opacity === '0.3' || el.style.opacity === '') {
-                el.style.opacity = '1';
-                el.style.transform = 'scale(1.1)';
-                el.style.boxShadow = '0 0 10px #ffaa00';
+            // Re-render dynamic text
+            const tab = STATE.activeTab;
+            const guideEl = document.getElementById('taskGuide');
+            if(tab === 'primary') {
+                guideEl.innerHTML = `<span class="animate-pulse">⚠️</span> ${t('guide_main')}`;
             } else {
-                el.style.opacity = '0.3';
-                el.style.transform = 'scale(1)';
-                el.style.boxShadow = 'none';
+                guideEl.innerHTML = `<span class="animate-pulse">⚡</span> ${t('guide_side')}`;
             }
         }
+        function showDialog(t,b,cb,c=true,e=null) {
+            AudioSys.sfx.click();
+            document.getElementById('dialogTitle').innerText = t; document.getElementById('dialogBody').innerText = b;
+            const cbBtn = document.getElementById('dialogConfirm');
+            const newCb = cbBtn.cloneNode(true); cbBtn.parentNode.replaceChild(newCb, cbBtn);
+            newCb.onclick = ()=>{closeDialog();if(cb)cb()};
+            document.getElementById('dialogCancel').style.display=c?'block':'none';
+            const exDiv = document.getElementById('dialogExtra'); exDiv.innerHTML='';
+            if(e){exDiv.classList.remove('hidden');exDiv.appendChild(e);}else exDiv.classList.add('hidden');
+            document.getElementById('dialogModal').classList.remove('hidden');
+        }
+        function closeDialog(){document.getElementById('dialogModal').classList.add('hidden');}
+        function closeModal(id){AudioSys.sfx.click();document.getElementById(id).classList.add('hidden');}
 
-        // --- GM ---
-        function toggleGM() { document.getElementById('gmPanel').classList.toggle('open'); }
-        function gmResetTasks() { STATE.tasks.forEach(t => { t.done = false; t.text = ''; }); saveSystem(); renderTasks(); }
-        function gmFastForward() { if(STATE.timer.remaining > 60) { STATE.timer.remaining -= 60; updateTimerDisplay(); } }
-        function gmAddXp() { GAME.addXp(50); }
-        function gmClearStorage() { if(confirm('WIPE?')) { localStorage.clear(); location.reload(); } }
-
-        // Boot
+        // --- INIT ---
         (function init(){
-            // Sanitize
-            STATE.tasks = STATE.tasks.map(t => ({...t, done: t.text ? t.done : false }));
+            document.addEventListener('touchstart', unlockAudio, {once:true});
+            document.addEventListener('click', unlockAudio, {once:true});
+            
+            if (STATE.timer.active && STATE.timer.endTime) {
+                const now = Date.now();
+                if (now >= STATE.timer.endTime) {
+                    STATE.timer.active = false;
+                    STATE.timer.pausedLeft = 0;
+                    completeTimer(); 
+                } else {
+                    timerTicker = setInterval(tick, 1000);
+                    tick();
+                }
+            } else {
+                updateTimerUI(STATE.timer.pausedLeft);
+            }
+
+            updateRealTime();
+            setInterval(updateRealTime, 1000);
+
             renderTasks();
-            updateTimerDisplay();
             updateUserStats();
             renderText();
-            document.querySelectorAll('.checklist-item').forEach(cb => cb.addEventListener('change', () => { AudioSys.sfx.click(); checkGatekeeper(); }));
-            // Bind keyboard enter for side tasks
-            document.addEventListener('keypress', function (e) {
-                if (e.key === 'Enter' && document.activeElement.id === 'newSideTask') {
-                    addSideTask();
-                }
-            });
+            
+            document.querySelectorAll('.checklist-item').forEach(cb => cb.addEventListener('change', checkGatekeeper));
+            document.querySelectorAll('.cyber-check').forEach(cb => cb.addEventListener('change', function() {
+                AudioSys.sfx.check();
+            }));
+            document.addEventListener('keypress', (e)=>{if(e.key==='Enter'&&document.activeElement.id==='newSideTask')addSideTask()});
+            
+            const style = document.createElement('style');
+            style.innerHTML = `@keyframes floatUp { 0% { opacity:1; transform: translateY(0); } 100% { opacity:0; transform: translateY(-30px); } }`;
+            document.head.appendChild(style);
         })();
     </script>
+
+    <!-- GM / DEV TOOLS (Hidden) -->
+    <div class="gm-toggle" onclick="document.querySelector('.gm-panel').classList.toggle('open')" style="position:fixed; bottom:20px; right:20px; width:40px; height:40px; background:rgba(0,0,0,0.8); border:1px solid #333; color:#333; font-size:10px; display:grid; place-items:center; cursor:pointer; z-index:10001; opacity:0.3;">GM</div>
+    <div class="gm-panel" style="position:fixed; bottom:20px; right:20px; width:300px; background:#111; border:1px solid var(--neon-amber); transform:translateY(120%); transition:transform 0.3s; z-index:10000; padding:1rem;">
+        <div class="text-neon-amber mb-3 font-bold border-b border-gray-700 pb-1">GOD_MODE // DEBUG</div>
+        <div class="grid grid-cols-2 gap-2">
+            <button onclick="gmAddXp()" class="border border-gray-600 p-2 hover:bg-gray-800 text-left text-xs text-gray-400">ADD 500 XP</button>
+            <button onclick="gmResetTimer()" class="border border-gray-600 p-2 hover:bg-gray-800 text-left text-xs text-gray-400">RESET TIMER</button>
+            <button onclick="gmClearData()" class="col-span-2 border border-red-900 text-red-500 p-2 hover:bg-red-900/20 text-center text-xs">WIPE LOCAL DATA</button>
+        </div>
+    </div>
+    <style>.gm-panel.open { transform: translateY(0); }</style>
 </body>
 </html>
